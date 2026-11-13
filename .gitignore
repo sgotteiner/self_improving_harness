@@ -11,6 +11,9 @@
 !/scripts/
 !/tasks/
 !/projects/
+!/cases/
+# captured drafts may quote transcripts; only approved cases are pushed
+/cases/_pending/
 
 # skills: no media assets, no claude.ai-synced copies
 /skills/synced/

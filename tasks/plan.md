@@ -30,6 +30,23 @@ hook, then after every change. "Better" means more cases pass, with the numbers.
 | Updates | weekly, local (Task Scheduler + headless setup-manager): fetch → summarize → security scan → pull → copy into `skills/` when clean and no local edits → commit → report in pending | he asked for automatic pulls; the shelf copies are what actually runs |
 | Switches | `auto-update`, `recall-hook`, `capture-hook` in `slots.json` | his rule 5: nothing hidden without its switch |
 
+## Revision 2026-11-13 (after the first replay) — brains, embeddings, enrichment
+His words: "the hook should call the agent, there should be brains in it, not keyword matching";
+"what if the improvement I want is to prevent answering back without testing — how is it gonna do
+that?"; "maybe a vector embedding is a better approach if matching anything"; "maybe with some sort
+of enrichment when writing and searching".
+- Lessons are checked **where the mistake happens**: at the input (a brain picks the relevant
+  lessons for the situation) and at the **output** (a Stop hook: a brain checks what was done and
+  claimed against the lessons and sends the session back if one is violated, e.g. "done" without a
+  test run). Capture stays after.
+- Retrieval: **embeddings** (local, free), chosen against BM25/hybrid on the existing 40-query eval.
+- **Enrichment**: at write time a model expands each case with situation descriptions (what he'd
+  say and what the session would be doing); at search time the brain first describes the situation
+  from the message + recent context, then searches.
+- Lessons grow: advice (input) → check (output gate) → hard rule in code when mechanically checkable.
+- The brain runs on a cheap model, bare (no setup loaded), never re-triggering the hooks; tokens
+  per call recorded.
+
 ## Tasks
 Phase 1: Foundation
 - [ ] T1 Git on the setup. Done when: `git init` in both, `.gitignore` excludes secrets and noise
