@@ -3,7 +3,10 @@ import datetime, json, os
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 SYSTEM_PREFIXES = ("<task-notification>", "[SYSTEM NOTIFICATION", "<system-reminder>", "<command-name>", "<local-command",
-                   "[Request interrupted by user", "Base directory for this skill")
+                   "[Request interrupted by user", "Base directory for this skill", "Stop hook feedback")
+# A background agent's result wakes the session without a human message. For the gate it starts a new turn, and its
+# text is evidence of what was done (e.g. "agent returned, files committed"), so it is handed over with the tool calls.
+NOTICE_PREFIX = "<task-notification>"
 LOG = os.path.join(ROOT, "scripts", "recall", "results", "hook.log")
 # Relevance cutoff on cosine (fastembed bge-small + enriched cases), shared by hook.py and gate.py. Below it a case is
 # not worth a brain call. Set from `python -I scripts/recall/eval_recall.py` (it prints the chosen value): the lowest
@@ -83,11 +86,24 @@ def _start(es, exclude):
     return max([i for i, e in enumerate(es) if human_text(e) and human_text(e).strip() != exclude] or [-1]) + 1
 
 
+def _notice(e):
+    """Text of a background-agent notification entry, else None."""
+    if e["type"] != "user":
+        return None
+    t = "\n".join(b.get("text", "") for b in blocks(e) if b.get("type") == "text")
+    return t if t.lstrip().startswith(NOTICE_PREFIX) else None
+
+
 def last_turn(path, exclude=None):
-    """(assistant text, [tool call lines]) of the latest turn: everything after the last human message."""
+    """(assistant text, [tool call lines]) of the latest turn: everything after the last human message or, if later,
+    the last background-agent notification (whose text is included as evidence)."""
     es = entries(path)
     start = _start(es, exclude)
     texts, tools = [], []
+    notices = [i for i, e in enumerate(es) if i >= start and _notice(e)]
+    if notices:
+        start = notices[-1] + 1
+        tools.append("Background agent result received this turn:\n" + (_notice(es[notices[-1]]) or ""))
     for e in es[start:]:
         if e["type"] == "assistant":
             for b in blocks(e):
