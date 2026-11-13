@@ -1,0 +1,5 @@
+- [Parked code is intentional](parked-code-is-intentional.md) — TradeTok's switched-off pages/components are kept on purpose; don't report them as dead code
+- [Demo feed, not the app](demo-feed-not-app.md) — site links go to /demo_feed only; app reachable by URL, no gate
+- [Sentry startup credit](sentry-startup-credit.md) — Sentry for Startups $5k approved; Sentry wiring is the next task
+- [Docs local, not artifacts](docs-local-not-artifacts.md) — he wants documents as local files in VS Code, not Claude Docs
+- [CTO learning goal](cto-learning-goal.md) — learn the whole system Iddo built plus TradeTok first; improvements later, not for Nov 4

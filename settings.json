@@ -1,0 +1,97 @@
+{
+  "env": {
+    "CLAUDE_CODE_PLUGIN_DIRS": "C:\\my_projects\\.claude-config\\mods\\usage-line"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "NotebookEdit",
+      "mcp__youtube",
+      "mcp__firecrawl"
+    ],
+    "deny": [
+      "Bash(rm -rf /:*)",
+      "Edit(//**/.env)",
+      "Edit(//**/.env.*)"
+    ],
+    "ask": [
+      "Bash(git commit *)",
+      "Bash(git push *)"
+    ]
+  },
+  "model": "opus",
+  "skillOverrides": {
+    "apple-design": "name-only",
+    "code-review-and-quality": "name-only",
+    "codeburn-cost": "name-only",
+    "debugging-and-error-recovery": "name-only",
+    "diagram-design": "name-only",
+    "emil-design-eng": "name-only",
+    "find-docs": "name-only",
+    "graphify": "name-only",
+    "idea-generation": "name-only",
+    "sector-overview": "name-only",
+    "humanizer": "name-only",
+    "hyperframes": "name-only",
+    "hyperframes-cli": "name-only",
+    "incremental-implementation": "name-only",
+    "last30days": "name-only",
+    "media-use": "name-only",
+    "observability-and-instrumentation": "name-only",
+    "planning-and-task-breakdown": "name-only",
+    "playwright-cli": "name-only",
+    "ponytail": "name-only",
+    "security-and-hardening": "name-only",
+    "spec-driven-development": "name-only",
+    "supabase": "name-only",
+    "supabase-postgres-best-practices": "name-only",
+    "ui-ux-pro-max": "name-only",
+    "vault": "name-only"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I C:/my_projects/.claude-config/scripts/setup_diagram.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -c \"(New-Object Media.SoundPlayer 'C:\\Windows\\Media\\Windows Notify System Generic.wav').PlaySync()\""
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -c \"(New-Object Media.SoundPlayer 'C:\\Windows\\Media\\Windows Notify Messaging.wav').PlaySync()\""
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "figma@claude-plugins-official": false,
+    "pyright-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
+  },
+  "theme": "dark"
+}

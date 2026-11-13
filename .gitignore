@@ -1,0 +1,39 @@
+# self-improving-harness: allowlist. Everything is ignored unless listed below.
+# Only setup and work content. Never secrets, sessions or personal life.
+/*
+!/.gitignore
+!/CLAUDE.md
+!/settings.json
+!/slots.json
+!/agents/
+!/skills/
+!/mods/
+!/scripts/
+!/tasks/
+!/projects/
+
+# skills: no media assets, no claude.ai-synced copies
+/skills/synced/
+/skills/**/assets/
+*.mp3
+*.mp4
+*.jpeg
+*.jpg
+*.png
+*.gif
+__pycache__/
+node_modules/
+
+# projects: only memory folders of work projects; never transcripts
+/projects/*/*
+!/projects/*/memory/
+# sensitive memories stay out (addresses, money, job search, company internals)
+/projects/c--my-projects-personal/memory/user-life-routine.md
+/projects/c--my-projects-personal/memory/project-moving-out.md
+/projects/C--my-projects-Cryptron/memory/project_transcriptor_interview_prep.md
+/projects/c--my-projects-TradeTok/memory/cto-learning-goal.md
+/projects/c--my-projects-TradeTok/memory/sentry-startup-credit.md
+/projects/c--my-projects-TradeTok/memory/demo-feed-not-app.md
+
+# past conversations
+/skills/design-diary/scripts/chat_*.txt

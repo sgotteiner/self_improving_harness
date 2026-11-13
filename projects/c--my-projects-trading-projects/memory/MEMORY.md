@@ -1,0 +1,12 @@
+- [Session start: the methodology file](session-start-methodology.md) — read docs/DEVELOPMENT_METHODOLOGY.md first; research in research/ (2026-10-12)
+- [No trash to assess](no-trash-to-assess.md) — don't bring sub-goal candidates or decision menus; keep working the threads until something clears the bar (2026-10-12)
+- [S/R work history](sr-lines-next-session.md) — history to 2026-10-11, current state is the methodology file §8; lines from the zigzag, trend by his counted rule, backtested strategy PF 2.40; he works in improve-and-backtest rounds; hand-offs are messages, not files in his repo
+- [What bug did he experience?](what-bug-did-he-experience.md) — work out what he just saw and why he asks, before answering; missing visibility means ASK (2026-10-05)
+- [Check the date HE is on](check-the-date-he-is-on.md) — read the VIEW line in the playground log before answering; name the date behind every number (2026-10-05)
+- [He gives ground truth and ideas; I build and test the algorithm](he-gives-ideas-i-build-and-test.md) — never hand him a knob to judge by eye (2026-10-05)
+- [Two branches: main and develop](branches-main-and-develop.md) — work goes on develop and gets pushed; no feature branches (2026-10-04)
+- [The drawing tools are our channel](drawing-tools-are-the-channel.md) — his unit is a setup at a date (drawings + his note); a hole in the channel blocks the algorithm work, so it gets fixed first
+- [What a handoff contains](handoff-format.md) — four parts: what we did, what he doesn't like, visibility/communication, how to make it easy to keep working (2026-10-09)
+- [Bash heredoc backticks get executed](bash-heredoc-backticks.md) — never put markdown/backticks/${} in a Bash heredoc here; use Edit/Write (happened twice)
+- [No new data unasked](no-new-data-unasked.md) — never fetch other markets/data on my own inference; the scope is his (2026-10-11)
+- [No leverage, no shorts](no-leverage.md) — long only, at most 100% of the account; levered results don't count (2026-10-11)

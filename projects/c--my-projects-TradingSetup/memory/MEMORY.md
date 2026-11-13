@@ -1,0 +1,2 @@
+- [Hebrew path shell bug](hebrew-path-shell-bug.md) — never type C:\Users\שגיא in a Bash command; use the D154~1 short name
+- [Claude config dir location](claude-config-dir-location.md) — config lives at C:\my_projects\.claude-config; verified 2026-09-21, old folder unused

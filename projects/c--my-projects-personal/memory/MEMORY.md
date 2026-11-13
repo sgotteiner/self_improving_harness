@@ -1,0 +1,6 @@
+- [Israel, Fri–Sat weekend](user-israel-weekend.md) — lives in Israel, Sunday is a workday, serves in miluim
+- [Token efficiency](feedback-token-efficiency.md) — long main sessions were ~98% of usage; precise agent tasks, short sessions
+- [His life and routine](user-life-routine.md) — personal assistant role; week, office, hobbies, car, what he wants nearby
+- [Follow "why he asks"](feedback-answer-yes-first.md) — the rule exists, I failed to apply it; answer how it affects him and his money, plainly
+- [Design for no tracking](feedback-design-for-no-tracking.md) — nothing may depend on him remembering; it acts or asks where he looks
+- [Moving out](project-moving-out.md) — room search up to ~₪3k, budget, rejected and next areas
