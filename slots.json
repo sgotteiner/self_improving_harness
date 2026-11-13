@@ -4,7 +4,19 @@
     "filler": null,
     "tried": "headroom 0.41 (2026-10-24/25): removed - a proxy in every request caused API outages; saved 0.2-1.4% in real sessions"
   },
-  "usage-measurement": { "filler": "codeburn + usage-line mod" },
-  "recall-hook": { "enabled": true },
-  "code-intelligence": { "filler": "pyright-lsp + typescript-lsp" }
+  "usage-measurement": {
+    "filler": "codeburn + usage-line mod"
+  },
+  "recall-hook": {
+    "enabled": true
+  },
+  "code-intelligence": {
+    "filler": "pyright-lsp + typescript-lsp"
+  },
+  "output-gate": {
+    "enabled": true
+  },
+  "capture": {
+    "enabled": true
+  }
 }

@@ -81,6 +81,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python -I C:/my_projects/.claude-config/scripts/recall/gate.py",
+            "timeout": 120
+          },
+          {
+            "type": "command",
             "command": "powershell -NoProfile -c \"(New-Object Media.SoundPlayer 'C:\\Windows\\Media\\Windows Notify System Generic.wav').PlaySync()\""
           }
         ]

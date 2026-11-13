@@ -5,7 +5,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CASES = os.path.normpath(os.path.join(HERE, "..", "..", "cases"))
 DB = os.path.join(HERE, "cases.db")
 # bm25 column weights: id, situation, lesson, wrong, right (situation highest)
-WEIGHTS = (2.0, 10.0, 3.0, 1.0, 1.0)
+WEIGHTS = (2.0, 10.0, 3.0, 1.0, 1.0, 5.0)  # + enriched (generated situations)
 STOP = set("a an the to of in on at for and or but is are was be it its this that i me my we you do does did "
            "can could should would will just so as with from by if then than not no yes up out about into".split())
 
@@ -45,23 +45,23 @@ def build():
     if os.path.exists(DB):
         os.remove(DB)
     con = sqlite3.connect(DB)
-    con.execute("CREATE VIRTUAL TABLE cases USING fts5(id, situation, lesson, wrong, \"right\", "
+    con.execute("CREATE VIRTUAL TABLE cases USING fts5(id, situation, lesson, wrong, \"right\", enriched, "
                 "tokenize='porter unicode61')")
     con.execute("CREATE TABLE meta(id TEXT PRIMARY KEY, date TEXT, situation TEXT, lesson TEXT, \"right\" TEXT)")
     for f in case_files():
         d = parse(f)
         cid = d.get("id") or os.path.basename(f)[:-3]
         sit = d.get("situation", [])
-        con.execute("INSERT INTO cases VALUES (?,?,?,?,?)",
+        con.execute("INSERT INTO cases VALUES (?,?,?,?,?,?)",
                     (cid.replace("-", " ") + " " + os.path.basename(f), " ".join(sit),
-                     d.get("lesson", ""), d.get("wrong", ""), d.get("right", "")))
+                     d.get("lesson", ""), d.get("wrong", ""), d.get("right", ""), " ".join(d.get("enriched", []))))
         con.execute("INSERT INTO meta VALUES (?,?,?,?,?)",
                     (cid, d.get("date", ""), sit[0] if sit else "", d.get("lesson", ""), d.get("right", "")))
     con.commit()
     con.close()
 
 
-def search(query, k=3):
+def search(query, k=3, enriched=False):
     """Return [(score, id)] best first; score = -bm25 (higher is better). Rebuilds if stale."""
     if stale():
         build()
@@ -69,6 +69,8 @@ def search(query, k=3):
     if not words:
         return []
     q = " OR ".join('"%s"' % w for w in dict.fromkeys(words))
+    if not enriched:
+        q = "{id situation lesson wrong right} : (" + q + ")"  # ignore the generated column
     con = sqlite3.connect(DB)
     w = ",".join(str(x) for x in WEIGHTS)
     rows = con.execute(f"SELECT id, bm25(cases, {w}) FROM cases WHERE cases MATCH ? ORDER BY 2 LIMIT ?", (q, k)).fetchall()
