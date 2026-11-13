@@ -37,3 +37,6 @@ node_modules/
 
 # past conversations
 /skills/design-diary/scripts/chat_*.txt
+
+# recall index: derived, rebuilt from cases/*.md
+/scripts/recall/cases.db

@@ -1,0 +1,40 @@
+{"q": "should I put a compression proxy in front of the API", "case": "proxy-in-request-path"}
+{"q": "can we shrink my token bill with something that sits between claude and anthropic", "case": "proxy-in-request-path"}
+{"q": "route all claude traffic through a local tool that trims prompts", "case": "proxy-in-request-path"}
+{"q": "I want to spend fewer input tokens, found a gateway that squeezes requests", "case": "proxy-in-request-path"}
+{"q": "let's fill the empty input compression slot", "case": "proxy-in-request-path"}
+{"q": "get claude-mem running, the npx install keeps dying with 127", "case": "installer-exits-127-windows"}
+{"q": "memory plugin install silently does nothing on my windows pc", "case": "installer-exits-127-windows"}
+{"q": "installer said done but the plugin isn't there, try bun maybe", "case": "installer-exits-127-windows"}
+{"q": "claude-mem setup failed again, just run the install one more time", "case": "installer-exits-127-windows"}
+{"q": "add persistent memory across sessions, installer exit code 127", "case": "installer-exits-127-windows"}
+{"q": "just rename that function in utils.py, update callers", "case": "missing-why-not-flagged"}
+{"q": "change the timeout in config to 30, file is settings.py", "case": "missing-why-not-flagged"}
+{"q": "delegate this to the implementer: add a retry to fetch()", "case": "missing-why-not-flagged"}
+{"q": "go edit the readme header, no need for details", "case": "missing-why-not-flagged"}
+{"q": "task for the agent: move helper into lib folder", "case": "missing-why-not-flagged"}
+{"q": "the edit on .env got blocked, use a shell command to put the line in", "case": "refused-tool-worked-around"}
+{"q": "permission denied when writing that file, find another way to write it", "case": "refused-tool-worked-around"}
+{"q": "Write tool says no, can you echo it into the file instead", "case": "refused-tool-worked-around"}
+{"q": "add DEBUG=1 to .env, if edit fails just append with bash", "case": "refused-tool-worked-around"}
+{"q": "it refused to change the protected file, get around it", "case": "refused-tool-worked-around"}
+{"q": "wait does this subscription pull money from my bank by itself?", "case": "answer-what-he-wants-to-know"}
+{"q": "I'm lost, what happens to me after signing this paper", "case": "answer-what-he-wants-to-know"}
+{"q": "will they charge my card without asking, I don't get this contract", "case": "answer-what-he-wants-to-know"}
+{"q": "is it going to take cash out of my account automatically or not", "case": "answer-what-he-wants-to-know"}
+{"q": "confused about what this agreement does to me, is it automatic?", "case": "answer-what-he-wants-to-know"}
+{"q": "remind me next week to check the results", "case": "design-for-no-tracking"}
+{"q": "make sure the check gets run now and then so it isn't forgotten", "case": "design-for-no-tracking"}
+{"q": "I'll run the audit myself when I remember, set it up that way", "case": "design-for-no-tracking"}
+{"q": "bring up the open item each time we start working", "case": "design-for-no-tracking"}
+{"q": "this needs a periodic manual run, how do we keep it from slipping", "case": "design-for-no-tracking"}
+{"q": "ok", "case": null}
+{"q": "send the link", "case": null}
+{"q": "what's black friday", "case": null}
+{"q": "should I buy the pixel", "case": null}
+{"q": "thanks, looks good", "case": null}
+{"q": "what time is it in tokyo", "case": null}
+{"q": "translate this sentence to hebrew", "case": null}
+{"q": "make the button blue", "case": null}
+{"q": "how do I cook rice", "case": null}
+{"q": "summarize this article for me", "case": null}
