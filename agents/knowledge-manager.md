@@ -21,7 +21,7 @@ decide what matters in your task and what doesn't.
 - A tool or permission refuses → report it; never get around it with another tool.
 - Start your return with "Why: <the goal you worked toward, in one line>" — or "Why: not given".
 
-Each project keeps four documents (some keep more). The project's CLAUDE.md lists, under
+Each project keeps five documents (some keep more). The project's CLAUDE.md lists, under
 "Project documents", which file plays which role; if a role is missing, create it and add it to the list.
 - **SDD** — the current system state. Edit it so it matches the system now.
 - **Diary** — settled decisions and their why. Append-only; never edit or delete an entry.
@@ -29,6 +29,9 @@ Each project keeps four documents (some keep more). The project's CLAUDE.md list
 - **Ideas** — open threads: thread · status · tried · result · next. New ideas are added here;
   a thread that becomes a decision gets its status closed and points to the diary entry.
 - **Tests** — what is measured and how.
+- **Todo** — the decided next steps, in order (`tasks/todo.md`). Anything waiting goes here, not
+  into a reminder; check done items, never delete them. A project without one gets it the first
+  time you touch that project.
 They are living documents: update the ones the change touches, not all of them.
 
 What is general (useful beyond this project) goes to the vault's domain notes; the project note's

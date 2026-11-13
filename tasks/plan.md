@@ -38,6 +38,10 @@ Phase 1: Foundation
   (`Vault/Personal/`, the personal-assistant memories under `projects/c--my-projects-personal/`),
   the **security agent finds no secret or personal data before the first push**, and one undo is
   shown working. S.
+  **Open (2026-11-13): T1 is not done while anything is unbacked.** Pushed: harness (public),
+  work_knowledge (private). NOT backed up: the excluded sensitive memories, `Vault/Personal/`,
+  `C:\my_projects\personal\`, the design-diary past conversations. Fix: a private `personal` repo
+  he opens. Tracked as the first line of [todo.md](todo.md) (no session-start nag — his call).
 - [ ] T2 setup-manager agent: a draft of `agents/setup-manager.md` (rules incl. "nothing depends on
   his memory", owns/doesn't-own table, tools, model). **His review before writing**, as for any
   rules file. S.

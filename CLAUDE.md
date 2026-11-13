@@ -92,7 +92,7 @@ How:
 - **The loop and the doc updates** — only as the core decides (above).
 - **Agents return evidence; fix decisions stay with him.** Independent agents run in parallel.
 
-## Where his thinking goes — every project keeps four documents (some keep more)
+## Where his thinking goes — every project keeps five documents (some keep more)
 - **SDD** — the current system state. The planner plans against it, the implementer builds by
   it, the reviewer compares the work against it.
 - **Diary** — settled decisions and their why, append-only. Suggest the entry in one line;
@@ -101,6 +101,8 @@ How:
   into the diary.
 - **Tests** — what is measured and how. An idea's result comes from the existing harness (a new
   strategy plugs into the strategy backtest) — tested by structure, not a new test per idea.
+- **Todo** — the decided next steps, in order (`tasks/todo.md`). Anything waiting, on him or on
+  an agent, goes here instead of a reminder; done items get checked, not deleted.
 
 Which file plays which role is listed under "Project documents" in each project's CLAUDE.md;
 a missing one gets created. **They are living documents** and the agents rely on them.
