@@ -43,10 +43,11 @@ def encode(texts, backend=DEFAULT):
 
 
 def scores(query, docs, backend=DEFAULT):
-    """docs: {id: [texts]}. Return {id: best cosine of the query to any of its texts}."""
+    """docs: {id: [texts]}. query: a text or a list of texts (chunks of a long one; the model reads ~512 tokens).
+    Return {id: best cosine of any query text to any of the id's texts}."""
     ids = [i for i in docs for _ in docs[i]]
     m = encode([t for i in docs for t in docs[i]], backend)
-    s = m @ encode([query], backend)[0]
+    s = (m @ encode([query] if isinstance(query, str) else query, backend).T).max(axis=1)
     out = {}
     for i, v in zip(ids, s):
         out[i] = max(out.get(i, -1.0), float(v))

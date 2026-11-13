@@ -61,7 +61,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -I C:/my_projects/.claude-config/scripts/recall/hook.py"
+            "command": "python -I C:/my_projects/.claude-config/scripts/recall/hook.py",
+            "timeout": 300
           }
         ]
       }

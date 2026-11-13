@@ -6,14 +6,16 @@ LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", "brain
 # --safe-mode: no CLAUDE.md, skills, MCP, hooks, settings. --tools "": no tool schemas. Floor measured: ~935 tokens/call.
 FLAGS = ["-p", "--output-format", "json", "--model", "haiku", "--no-session-persistence", "--tools", "",
          "--safe-mode", "--exclude-dynamic-system-prompt-sections"]
-_cwd = tempfile.mkdtemp(prefix="brain-")
+CWD = os.path.join(tempfile.gettempdir(), "recall-brain")  # one fixed empty dir, reused by every call
+TIMEOUT = 60  # seconds per call; hook.py and gate.py timeouts in settings.json are sized from it
 
 
 def ask(prompt, system="Answer tersely and exactly as instructed.", tag=""):
     """Return (text, tokens). Tokens = all usage counters summed; appended to results/brain_calls.jsonl."""
+    os.makedirs(CWD, exist_ok=True)
     env = dict(os.environ, RECALL_BRAIN="1")
     p = subprocess.run([CLAUDE] + FLAGS + ["--system-prompt", system], input=prompt, capture_output=True,
-                       text=True, encoding="utf-8", cwd=_cwd, env=env, timeout=180)
+                       text=True, encoding="utf-8", cwd=CWD, env=env, timeout=TIMEOUT)
     j = json.loads(p.stdout)
     u = j.get("usage", {})
     tok = sum(u.get(k, 0) for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens"))

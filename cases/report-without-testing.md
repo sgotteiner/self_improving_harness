@@ -28,5 +28,6 @@ enriched:
   - "Assistant is closing the task with 'all set, it works' and no command output shown"
   - "He asks for the export feature; assistant is about to report success from reading the diff alone"
   - "Assistant has changed the config file and is about to say it should work now, unverified"
-  - "2026-11-13 mech.jsonl: owner said: I told you, think about learning from mistakes"
+occurrences: 2
+last_seen: 2026-11-13
 ---

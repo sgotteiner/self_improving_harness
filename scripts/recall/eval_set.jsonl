@@ -38,3 +38,15 @@
 {"q": "make the button blue", "case": null}
 {"q": "how do I cook rice", "case": null}
 {"q": "summarize this article for me", "case": null}
+{"q": "what's the weather in tel aviv tomorrow", "case": null}
+{"q": "recommend a good book about habits", "case": null}
+{"q": "how many calories in an avocado", "case": null}
+{"q": "add a dark mode toggle to the settings page", "case": null}
+{"q": "what does this regex do", "case": null}
+{"q": "remind me to call the dentist", "case": null}
+{"q": "write a haiku about autumn", "case": null}
+{"q": "why is the sky blue", "case": null}
+{"q": "rename the variable count to total in this function", "case": null}
+{"q": "what's the difference between a list and a tuple in python", "case": null}
+{"q": "show me the last five commits", "case": null}
+{"q": "how do I center a div", "case": null}

@@ -16,6 +16,8 @@ def docs(enriched):
 
 def search(query, k=3, method="hybrid", enriched=True, backend=embed.DEFAULT):
     """Return [(score, id)] best first. Score scale differs per method."""
+    if method != "emb" and not isinstance(query, str):
+        query = "\n".join(query)
     if method == "bm25":
         return index.search(query, k, enriched)
     emb = sorted(embed.scores(query, docs(enriched), backend).items(), key=lambda x: -x[1])

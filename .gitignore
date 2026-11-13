@@ -45,3 +45,5 @@ node_modules/
 /scripts/recall/cases.db
 /scripts/recall/vectors.db
 /scripts/recall/results/brain_calls.jsonl
+/scripts/recall/history.db
+/scripts/recall/results/hook.log

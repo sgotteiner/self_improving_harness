@@ -1,8 +1,24 @@
 """Transcript and slot helpers shared by the hooks. Transcript = jsonl; a human turn is a user entry with text."""
-import json, os
+import datetime, json, os
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-SYSTEM_PREFIXES = ("<task-notification>", "[SYSTEM NOTIFICATION", "<system-reminder>", "<command-name>", "<local-command")
+SYSTEM_PREFIXES = ("<task-notification>", "[SYSTEM NOTIFICATION", "<system-reminder>", "<command-name>", "<local-command",
+                   "[Request interrupted by user", "Base directory for this skill")
+LOG = os.path.join(ROOT, "scripts", "recall", "results", "hook.log")
+# Relevance cutoff on cosine (fastembed bge-small + enriched cases), shared by hook.py and gate.py. Below it a case is
+# not worth a brain call. Set from `python -I scripts/recall/eval_recall.py` (it prints the chosen value): the lowest
+# 0.01 step where at most 1 of 22 unrelated eval queries passes, keeping 28/30 recall. Unrelated text tops out at 0.62
+# median / 0.74 max on this model, so the old 0.60 passed nearly all.
+RELEVANCE_MIN = 0.70
+
+
+def log(msg):
+    """One line to the gitignored results/hook.log, so a silent exit can be explained later."""
+    try:
+        with open(LOG, "a", encoding="utf-8") as f:
+            f.write(f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S} {msg}\n")
+    except OSError:
+        pass
 
 
 def enabled(slot):
@@ -51,9 +67,15 @@ def human_text(e):
     return t if is_human(t) else None
 
 
+def chunks(text, width=800):
+    """One chunk per non-empty line (long lines cut every `width` chars) so the embedder, which reads ~512 tokens, sees
+    all of the text, and a short claim at the end is not diluted by what came before. A case scores by its best chunk."""
+    return [l[i:i + width] for l in text.splitlines() if l.strip() for i in range(0, len(l), width)]
+
+
 def tool_line(b):
     inp = b.get("input", {})
-    return f"{b.get('name')}: " + str(inp.get("command") or inp.get("file_path") or inp.get("pattern") or inp)[:150]
+    return f"{b.get('name')}: " + str(inp.get("command") or inp.get("file_path") or inp.get("pattern") or inp)
 
 
 def _start(es, exclude):
@@ -76,13 +98,13 @@ def last_turn(path, exclude=None):
     return "\n".join(texts), tools
 
 
-def recent(path, n=3, cap=500):
+def recent(path, n=3):
     """The last n human/assistant text turns as short lines, for situation description."""
     lines = []
     for e in entries(path):
         t = human_text(e) if e["type"] == "user" else "\n".join(b.get("text", "") for b in blocks(e) if b.get("type") == "text")
         if t and t.strip():
-            lines.append(("Owner: " if e["type"] == "user" else "Assistant: ") + t.strip()[:cap])
+            lines.append(("Owner: " if e["type"] == "user" else "Assistant: ") + t.strip())
     return lines[-n:]
 
 

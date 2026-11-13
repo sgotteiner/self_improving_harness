@@ -79,6 +79,8 @@ def search(query, k=3, enriched=False):
 
 
 def meta(cid):
+    if not os.path.exists(DB):
+        build()
     con = sqlite3.connect(DB)
     r = con.execute("SELECT date, situation, lesson, \"right\" FROM meta WHERE id=?", (cid,)).fetchone()
     con.close()
