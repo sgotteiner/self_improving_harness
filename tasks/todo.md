@@ -16,6 +16,7 @@ Next things, in order. Done items get checked, not deleted. The plan: [plan.md](
 
 - [ ] review captured case `no-cost-caps-when-user-said-cost-irrelevant` (cases/_pending/no-cost-caps-when-user-said-cost-irrelevant.md): add, edit or discard
 - [ ] review captured case `answer-the-direct-question-before-details` (cases/_pending/answer-the-direct-question-before-details.md): add, edit or discard
+- [ ] review captured case `explain-lessons-before-asking-approval` (cases/_pending/explain-lessons-before-asking-approval.md): add, edit or discard
 Done
 - [x] 2026-11-14 — gate false block fixed: a background-agent notification now starts a new turn and its result is evidence; "Stop hook feedback" no longer counts as his message. Replayed the false-block transcript 3×: no block (brain consulted each time)
 - [x] 2026-11-13 — every project keeps a Todo (fifth document): CLAUDE.md + knowledge-manager rules

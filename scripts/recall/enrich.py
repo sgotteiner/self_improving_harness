@@ -8,6 +8,8 @@ PROMPT = """A lesson from a past mistake of an AI coding assistant is below. Wri
 (one per line, no numbering, no quotes, max 25 words each) of moments when this lesson applies. Mix two kinds:
 (a) things the owner might say in his own words, casual, different wordings and vocabulary than the lesson;
 (b) what the assistant itself would be doing or about to do at that moment (e.g. "about to report ...").
+Cover the GENERAL situation across different topics and tools, not only the one example the case came from: at most
+2 lines may mention the original example's subject; the rest must be about other subjects where the lesson applies.
 Output only the 10 lines.
 
 Lesson id: {id}

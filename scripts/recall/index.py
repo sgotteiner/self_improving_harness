@@ -38,7 +38,17 @@ def stale():
     if not os.path.exists(DB):
         return True
     t = os.path.getmtime(DB)
-    return any(os.path.getmtime(f) > t for f in case_files()) or os.path.getmtime(__file__) > t
+    if any(os.path.getmtime(f) > t for f in case_files()) or os.path.getmtime(__file__) > t:
+        return True
+    # A case moved in (approve keeps its old mtime) or deleted changes the set of ids without a newer mtime.
+    con = sqlite3.connect(DB)
+    try:
+        ids = {r[0] for r in con.execute("SELECT id FROM meta")}
+    except sqlite3.Error:
+        return True
+    finally:
+        con.close()
+    return ids != {os.path.basename(f)[:-3] for f in case_files()}
 
 
 def build():
@@ -79,7 +89,7 @@ def search(query, k=3, enriched=False):
 
 
 def meta(cid):
-    if not os.path.exists(DB):
+    if stale():  # the embedding path never calls search(), so meta() must keep the table current itself
         build()
     con = sqlite3.connect(DB)
     r = con.execute("SELECT date, situation, lesson, \"right\" FROM meta WHERE id=?", (cid,)).fetchone()
