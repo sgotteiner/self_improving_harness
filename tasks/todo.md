@@ -9,6 +9,7 @@ Next things, in order. Done items get checked, not deleted. The plan: [plan.md](
 - [ ] Recall hook fires on background-task notifications (injected all 3 cases on one) — skip non-human prompts
 - [ ] Replay costs ~2.5M tokens / $3.70 per run — run only after a rule change; consider Sonnet for replay sessions
 - [ ] Reviewer pass on scripts/recall/ (new logic); knowledge-manager: SDD + tests doc (recall eval, replay)
+- [ ] Gate on every agent (later, "improve it recursively"): attach the gate to SubagentStop so each agent's own work is checked before it reports back; record which agent made each mistake, so agents can be improved
 - [ ] Gate verdict isn't logged (an "OK" leaves no trace) and it's inconsistent: on 2026-11-14 a long "…Fixed, it works now." test transcript ran the brain (4,041 tokens) and was NOT blocked, while the implementer's similar test was — log every verdict, then measure block rate on a fixed set
 - [ ] T8–T10 — automatic weekly updates, slots + IDEAS rows
 - [ ] Knowledge-manager: record in the setup's SDD that the setup is in git (2 repos, what's excluded)
