@@ -13,6 +13,7 @@ Next things, in order. Done items get checked, not deleted. The plan: [plan.md](
 - [ ] T8–T10 — automatic weekly updates, slots + IDEAS rows
 - [ ] Knowledge-manager: record in the setup's SDD that the setup is in git (2 repos, what's excluded)
 
+- [ ] review captured case `no-cost-caps-when-user-said-cost-irrelevant` (cases/_pending/no-cost-caps-when-user-said-cost-irrelevant.md): add, edit or discard
 Done
 - [x] 2026-11-13 — every project keeps a Todo (fifth document): CLAUDE.md + knowledge-manager rules
 - [x] 2026-11-13 — `self_improving_harness` (public) and `work_knowledge` (private) pushed; security scan before the first push
