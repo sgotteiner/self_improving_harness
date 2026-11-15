@@ -68,8 +68,9 @@ These override everything below. When a call is hard, resolve it toward these.
   Missing a real idea starves the diary; keeping a routine fix corrupts it — both
   are failures. A good diary is a *filter*, not an archive.
 - **Grounded, never invented.** Every *why* must trace to something the owner
-  actually said. If the reasoning isn't in the record, mark it `(inferred)` — never
-  fabricate a plausible-sounding rationale. A confident wrong why is worse than an
+  actually said. If he didn't state it, write `(not stated)` — never an inferred reason
+  in his diary; a reason Claude infers goes to the project's flags file as "inferred why
+  for <entry title>". Never fabricate a plausible-sounding rationale. A confident wrong why is worse than an
   admitted gap.
 
 ## Inputs: read the whole record
@@ -231,7 +232,7 @@ and fragment). The *type* is a set of tags, not a different shape.
 tags: kind=<decision|feature-motivation|mini-feature|bug-lesson|principle|milestone|idea> · attribution=<your-design|your-correction|delegated> · portable=<yes|no> · signature=<yes|no> · importance=<high|normal>
 anchor: <YYYY-MM-DD> · <commit-or-none> · <session:turn>
 **Idea:** <the WHAT *or the HOW* — the decision, or the method/mechanism the owner prescribed, in concept terms, 1–3 sentences>
-**Why:** <the reasoning — the problem it solved, the alternative rejected. Summarize in clean prose and cite the source; quote only a signature line. If unstated, write "(inferred)".>
+**Why:** <the reasoning — the problem it solved, the alternative rejected. Summarize in clean prose and cite the source; quote only a signature line. If he didn't state it, write "(not stated)"; an inferred reason goes to the flags file, never here.>
 **Replaces:** <only if it supersedes an earlier decision — name it + why the old one was left>
 **Links:** [[related entries]]
 ```
@@ -271,7 +272,7 @@ or a cross-domain idea is signature whether or not it got a fanfare.
 ## Grounding, quoting & citation
 
 Anchor each entry to `commit + session:turn` so any claim is verifiable without
-re-deriving it. An unstated why is marked `(inferred)`, never invented. This makes
+re-deriving it. An unstated why is marked `(not stated)`, never invented or inferred in the diary. This makes
 the diary self-auditing — the owner can spot-check a citation any time, which is
 what lets the **backfill** run **unattended** (live mode is approval-gated — see Modes).
 
