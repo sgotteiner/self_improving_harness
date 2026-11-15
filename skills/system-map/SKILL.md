@@ -36,13 +36,18 @@ Unknown → a red `note`, never a guess. Code defaults are labelled as defaults.
 
 **Generate, don't retype:** when the substance sits in a data/config file (a rulebook, a list, a prompt), build that branch with a small script saved next to the map (`map-src/`), so it can be refreshed.
 
+## The map follows the SDD
+The SDD is the current state of the system; the map is drawn from it. (His design: "compare the diff in the sdd from last time a map was generated and use that to change only the right part of the map".)
+- When building, record on the root of `T`: `sdd` (the SDD file paths) and `sddCommit` (the git commit of the SDD the map was drawn from).
+- Give each box an `sdd` field naming the SDD section (its heading) it describes; boxes drawn only from code keep their `file` field.
+
 ## Updating an existing map (never rebuild it)
-When the system changed, update only what the change touched:
+When the system changed, update the SDD first (knowledge-manager), then only the map boxes the change touched:
 0. Copy the map aside first (the "before" for step 5).
-1. List what changed (files, settings, behavior) from the change itself or git.
-2. Find the boxes it touches: every box whose `file` names a changed file, plus boxes whose text mentions the changed part — grep the `T` data for its names, its neighbours' names, and any count or number the change moves (e.g. "27 folders" when a folder is added).
+1. List what changed: `git diff <sddCommit> -- <sdd files>` gives the changed SDD sections; the change itself or git gives changed code files.
+2. Find the boxes it touches: every box whose `sdd` names a changed section, every box whose `file` names a changed code file, plus boxes whose text mentions the changed part — grep the `T` data for its names and any count or number the change moves (e.g. "27 folders" when a folder is added). A map without `sddCommit` yet: use the grep only, and record `sddCommit` at the end.
 3. Re-read only those sources; edit only those boxes (add a box for a new part, under the stage it belongs to; remove one for a removed part). Re-count every count the change moves. Keep every other box and every id byte-identical.
-4. Re-run any generator in `map-src/` whose source changed.
+4. Re-run any generator in `map-src/` whose source changed. Set `sddCommit` to the SDD's current commit.
 5. Report the diff with `node scripts/diff-maps.js <before> <after>`: identical / changed / added / removed, plus one line per changed box. If more than a third of the boxes changed, stop and ask him before going on.
 
 ## Checks before handing it over
