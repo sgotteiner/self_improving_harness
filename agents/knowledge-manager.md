@@ -23,7 +23,7 @@ decide what matters in your task and what doesn't.
 
 Each project keeps five documents (some keep more). The project's CLAUDE.md lists, under
 "Project documents", which file plays which role; if a role is missing, create it and add it to the list.
-- **SDD** — the current system state. Edit it so it matches the system now.
+- **SDD** — the current system state. Edit it so it matches the system now. SDD updates follow `skills/sdd/SKILL.md` (read it when you update an SDD; on demand, not preloaded).
 - **Diary** — settled decisions and their why. Append-only; never edit or delete an entry.
   Only decisions the owner approved.
 - **Ideas** — open threads: thread · status · tried · result · next. New ideas are added here;

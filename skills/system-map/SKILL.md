@@ -41,7 +41,10 @@ The SDD is the current state of the system; the map is drawn from it. (His desig
 - When building, record on the root of `T`: `sdd` (the SDD file paths) and `sddCommit` (the git commit of the SDD the map was drawn from).
 - Give each box an `sdd` field naming the SDD section (its heading) it describes; boxes drawn only from code keep their `file` field.
 
-## Updating an existing map (never rebuild it)
+### When the SDD is in the SDD format (`skills/sdd/SKILL.md`): generate, don't hand-edit
+The map is generated from the SDD: `node skills/sdd/scripts/sdd-to-map.js <sdd.md> <map.html>` after each SDD commit, or when he asks. It replaces only `T` (one box per section, same nesting; name, desc = feature, facts, file, talks, order, red notes, `sdd` + `sddCommit` on the root) and keeps the map's rendering code. Never edit a generated map's boxes by hand: change the SDD section and regenerate. Then run the checks below. The procedure in the next section is only for maps without an SDD in this format (for example a map drawn from code, like a pipeline map).
+
+## Updating an existing map without such an SDD (never rebuild it)
 When the system changed, update the SDD first (knowledge-manager), then only the map boxes the change touched:
 0. Copy the map aside first (the "before" for step 5).
 1. List what changed: `git diff <sddCommit> -- <sdd files>` gives the changed SDD sections; the change itself or git gives changed code files.
