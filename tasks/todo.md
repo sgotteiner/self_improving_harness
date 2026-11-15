@@ -11,12 +11,25 @@ Next things, in order. Done items get checked, not deleted. The plan: [plan.md](
 - [ ] Reviewer pass on scripts/recall/ (new logic); knowledge-manager: SDD + tests doc (recall eval, replay)
 - [ ] Gate on every agent (later, "improve it recursively"): attach the gate to SubagentStop so each agent's own work is checked before it reports back; record which agent made each mistake, so agents can be improved
 - [ ] Gate verdict isn't logged (an "OK" leaves no trace) and it's inconsistent: on 2026-11-14 a long "…Fixed, it works now." test transcript ran the brain (4,041 tokens) and was NOT blocked, while the implementer's similar test was — log every verdict, then measure block rate on a fixed set
+- [ ] Recall eval after general enrichment (2026-11-14): best cutoff 0.75 → 20/30 (was 28/30 with case-specific enrichment). The 30 eval queries are paraphrases of the original specific situations; general lessons need a general eval set (same lesson, other topics) before re-tuning the cutoff
 - [ ] T8–T10 — automatic weekly updates, slots + IDEAS rows
 - [ ] Knowledge-manager: record in the setup's SDD that the setup is in git (2 repos, what's excluded)
 
-- [ ] review captured case `no-cost-caps-when-user-said-cost-irrelevant` (cases/_pending/no-cost-caps-when-user-said-cost-irrelevant.md): add, edit or discard
-- [ ] review captured case `answer-the-direct-question-before-details` (cases/_pending/answer-the-direct-question-before-details.md): add, edit or discard
-- [ ] review captured case `explain-lessons-before-asking-approval` (cases/_pending/explain-lessons-before-asking-approval.md): add, edit or discard
+- [ ] review captured case `html-file-not-artifact` (cases/_pending/html-file-not-artifact.md): add, edit or discard
+- [ ] review captured case `unexplained-check-criteria` (cases/_pending/unexplained-check-criteria.md): add, edit or discard
+- [ ] review captured case `verify-saved-and-indexed-state-before-reporting` (cases/_pending/verify-saved-and-indexed-state-before-reporting.md): add, edit or discard
+- [ ] review captured case `report-saved-content-not-actions` (cases/_pending/report-saved-content-not-actions.md): add, edit or discard
+- [ ] review captured case `answer-the-question-asked-not-the-next-task` (cases/_pending/answer-the-question-asked-not-the-next-task.md): add, edit or discard
+- [ ] review captured case `lesson-as-structure-not-memory` (cases/_pending/lesson-as-structure-not-memory.md): add, edit or discard
+- [ ] review captured case `answer-direct-question-before-own-process` (cases/_pending/answer-direct-question-before-own-process.md): add, edit or discard
+- [ ] review captured case `claimed-running-task-without-evidence` (cases/_pending/claimed-running-task-without-evidence.md): add, edit or discard
+- [ ] review captured case `report-after-reading-full-output` (cases/_pending/report-after-reading-full-output.md): add, edit or discard
+- [ ] review captured case `plain-explanation-for-confused-reader` (cases/_pending/plain-explanation-for-confused-reader.md): add, edit or discard
+- [ ] review captured case `single-nested-artifact-over-split-fixes` (cases/_pending/single-nested-artifact-over-split-fixes.md): add, edit or discard
+- [ ] review captured case `reverting-edit-without-confirmation-after-rejection` (cases/_pending/reverting-edit-without-confirmation-after-rejection.md): add, edit or discard
+- [ ] review captured case `keep-stated-intent-over-numeric-proxy` (cases/_pending/keep-stated-intent-over-numeric-proxy.md): add, edit or discard
+- [ ] review captured case `attributing-ownership-from-presence` (cases/_pending/attributing-ownership-from-presence.md): add, edit or discard
+- [ ] review captured case `missing-loop-named-as-missing-judge` (cases/_pending/missing-loop-named-as-missing-judge.md): add, edit or discard
 Done
 - [x] 2026-11-14 — gate false block fixed: a background-agent notification now starts a new turn and its result is evidence; "Stop hook feedback" no longer counts as his message. Replayed the false-block transcript 3×: no block (brain consulted each time)
 - [x] 2026-11-13 — every project keeps a Todo (fifth document): CLAUDE.md + knowledge-manager rules
