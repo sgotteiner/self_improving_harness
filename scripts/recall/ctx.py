@@ -8,7 +8,7 @@ SYSTEM_PREFIXES = ("<task-notification>", "[SYSTEM NOTIFICATION", "<system-remin
 # text is evidence of what was done (e.g. "agent returned, files committed"), so it is handed over with the tool calls.
 NOTICE_PREFIX = "<task-notification>"
 LOG = os.path.join(ROOT, "scripts", "recall", "results", "hook.log")
-# Relevance cutoff on cosine (fastembed bge-small + enriched cases), shared by hook.py and gate.py. Below it a case is
+# Relevance cutoff on cosine (fastembed bge-small), shared by hook.py and gate.py. Below it a case is
 # not worth a brain call. Set from `python -I scripts/recall/eval_recall.py` (it prints the chosen value): the lowest
 # 0.01 step where at most 1 of 22 unrelated eval queries passes, keeping 28/30 recall. Unrelated text tops out at 0.62
 # median / 0.74 max on this model, so the old 0.60 passed nearly all.

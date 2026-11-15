@@ -19,7 +19,7 @@ def check(tp):
     if not text.strip():
         ctx.log("gate: no assistant text in the last turn")
         return None
-    hits = [(s, c) for s, c in retrieve.search(ctx.chunks(text) + ctx.chunks("\n".join(tools)), 6, "emb", True)
+    hits = [(s, c) for s, c in retrieve.search(ctx.chunks(text) + ctx.chunks("\n".join(tools)), 6, "emb")
             if s >= ctx.RELEVANCE_MIN]
     if not hits:
         ctx.log("gate: no case above the relevance cutoff")
@@ -42,6 +42,15 @@ def main():
         return
     tp = d.get("transcript_path", "")
     r = check(tp)
+    if not r and ctx.enabled("delegation-hook"):  # off until the owner approves tasks/delegation-draft.md
+        try:
+            import delegate
+            d, _ = delegate.output_step(tp)
+            if d:
+                print(json.dumps({"decision": "block", "reason": d[1]}))
+        except Exception as e:
+            ctx.log(f"gate: delegation failed: {e!r}")
+        return
     if not r:
         return
     cid, why = r

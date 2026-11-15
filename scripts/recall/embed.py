@@ -52,3 +52,17 @@ def scores(query, docs, backend=DEFAULT):
     for i, v in zip(ids, s):
         out[i] = max(out.get(i, -1.0), float(v))
     return out
+
+
+def missing(texts, backend=DEFAULT):
+    """How many of the texts have no cached vector yet (does not encode)."""
+    if not texts or not os.path.exists(DB):
+        return len(texts)
+    keys = [backend + hashlib.sha1(t.encode("utf-8")).hexdigest() for t in texts]
+    con = sqlite3.connect(DB)
+    try:
+        have = {r[0] for r in con.execute(f"SELECT k FROM v WHERE k IN ({','.join('?' * len(keys))})", keys)}
+    except sqlite3.Error:
+        have = set()
+    con.close()
+    return len(set(keys) - have)

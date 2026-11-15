@@ -4,7 +4,7 @@ occurrence on that case. Pending cases are not used by the hooks until moved to 
 import datetime, json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import brain, ctx, embed, history, index
+import brain, ctx, embed, history, index, validate
 
 PENDING = os.path.join(index.CASES, "_pending")
 TODO = os.path.join(ctx.ROOT, "tasks", "todo.md")
@@ -37,7 +37,7 @@ def _docs():
         for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
             if f.endswith(".md") and f != "README.md":
                 c = index.parse(os.path.join(d, f))
-                out[tag + f[:-3]] = c.get("situation", []) + [c.get("lesson", "")] + c.get("enriched", [])
+                out[tag + f[:-3]] = c.get("situation", []) + [c.get("lesson", "")] 
     return out
 
 
@@ -91,14 +91,91 @@ def _todo(slug):
     open(TODO, "w", encoding="utf-8").write("\n".join(lines))
 
 
-def approve(slug, level="advice"):
+def move(slug, level="advice"):
     """Move a pending case into cases/ with its level; drop source/his_words/status/asked (the words stay in history.db)."""
     src = os.path.join(PENDING, slug + ".md")
+    dst = os.path.join(index.CASES, slug + ".md")
+    if not os.path.exists(src):
+        raise FileNotFoundError(f"no pending case {src}")
+    if os.path.exists(dst):
+        raise FileExistsError(f"{dst} already exists")
+    if level not in validate.LEVELS:
+        raise ValueError(f"level {level!r} is not one of {validate.LEVELS}")
     t = open(src, encoding="utf-8").read()
     t = re.sub(r"^(source|his_words|status|asked):.*\n", "", t, flags=re.M)
     t = re.sub(r"^level:.*$", "level: " + level, t, count=1, flags=re.M)
-    open(os.path.join(index.CASES, slug + ".md"), "w", encoding="utf-8", newline="").write(t)
+    open(dst, "w", encoding="utf-8", newline="").write(t)
     os.remove(src)
+    return dst
+
+
+def approve(slug, level="advice"):
+    """Save a lesson as one complete step, in the order cases/README.md requires; every step is reported and a failed
+    step is a failed approve (returns False). Steps: move, index, history (clean + publish occurrences),
+    embeddings (encoded now, not at the first search), then the checks of validate.py (fields, privacy,
+    occurrences, embeddings, recall rank). Examples are the written fields and the real cleaned occurrences, nothing
+    generated. The case file stays in cases/ even when a step fails, so it can be fixed."""
+    rep = []
+
+    def step(name, fn):
+        try:
+            ok, ev = fn()
+        except Exception as ex:
+            ok, ev = False, f"error {ex!r}"
+        rep.append((name, ok, ev))
+        return ok
+
+    dst = [None]
+
+    def do_move():
+        dst[0] = move(slug, level)
+        return True, f"cases/{slug}.md, level {level}"
+
+    def do_index():
+        index.build()
+        return index.meta(slug) is not None, f"{len(index.case_files())} cases indexed"
+
+    def do_history():
+        done, failed, files = history.sync()
+        return failed == 0, f"{done} occurrences cleaned now, {failed} failed, {len(index.history_texts(slug))} for this case"
+
+    def do_embed():
+        d = index.parse(dst[0])
+        t = validate.texts(d)
+        embed.encode(t)
+        return embed.missing(t) == 0, f"{len(t)} texts encoded and cached"
+
+    if step("move", do_move):
+        for name, fn in (("index", do_index), ("history", do_history), ("embeddings", do_embed)):
+            if not step(name, fn):
+                break
+        else:
+            rep += validate.run(dst[0], only=("fields", "privacy", "occurrences", "recall"))
+    return _print(f"approve {slug} ({level})", rep)
+
+
+def check_all(only=None):
+    """Run the validation over every case in cases/ (or just `only`, with the evidence of every check).
+    Returns True when all pass."""
+    ok = True
+    for f in index.case_files():
+        if only and os.path.basename(f)[:-3] != only:
+            continue
+        ok &= _print(os.path.basename(f)[:-3], validate.run(f), quiet=not only)
+    print("check:", "all cases pass" if ok else "FAILED")
+    return bool(ok)
+
+
+def _print(title, rep, quiet=False):
+    allok = all(r[1] for r in rep)
+    if not quiet or not allok:
+        print(title + (": ok" if allok else ": FAILED"))
+        for name, ok, ev in rep:
+            if not quiet or not ok:
+                print(f"  [{'ok' if ok else 'FAIL'}] {name}: {ev}")
+    else:
+        print(f"{title}: ok ({', '.join(n for n, _, _ in rep)})")
+    return allok
 
 
 def ask_notes():
@@ -120,7 +197,7 @@ def ask_notes():
                            f"{d.get('lesson', '')}. Then ask the owner: add it to "
                            "the knowledge? and how: as a lesson brought in when the situation repeats (level: advice), as a "
                            "check before finishing (level: check), or as a hard rule (level: rule); or edit or discard. Apply "
-                           f"his answer: `python -I scripts/recall/capture.py approve {f[:-3]} <advice|check|rule>` (moves it "
+                           f"his answer: `python -I scripts/recall/capture.py approve {f[:-3]} <advice|check|rule>` (one step: moves it, indexes, embeds, checks, prints a report; read the report back to him "
                            "to cases/, keeps his words only in history.db), or edit it, or delete the file."))
     return out
 
@@ -130,5 +207,10 @@ def mark_asked(path):
     open(path, "w", encoding="utf-8", newline="").write(t)
 
 
-if __name__ == "__main__" and len(sys.argv) >= 3 and sys.argv[1] == "approve":
-    approve(*sys.argv[2:4])
+if __name__ == "__main__" and len(sys.argv) >= 2:
+    if sys.argv[1] == "approve" and len(sys.argv) >= 3:
+        sys.exit(0 if approve(*sys.argv[2:4]) else 1)
+    if sys.argv[1] == "check":
+        sys.exit(0 if check_all(*sys.argv[2:3]) else 1)
+    print("usage: capture.py approve <slug> <advice|check|rule> | capture.py check [slug]")
+    sys.exit(2)

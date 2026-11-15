@@ -16,7 +16,7 @@ STEP2 = ("Situation: {sit}\n\nPast cases (lessons from earlier mistakes):\n{case
 def recall(prompt, transcript):
     import brain, index, retrieve
     sit, _ = brain.ask(STEP1.format(ctx="\n".join(ctx.recent(transcript, 4)), prompt=prompt), tag="recall-1")
-    hits = retrieve.search(ctx.chunks(sit + "\n" + prompt), 8, "emb", True)
+    hits = retrieve.search(ctx.chunks(sit + "\n" + prompt), 8, "emb")
     hits = [(s, c) for s, c in hits if s >= ctx.RELEVANCE_MIN]
     if not hits:
         ctx.log("hook: no case above the relevance cutoff, no second brain call")
@@ -56,6 +56,8 @@ def main():
     if cap:  # drafted now, asked at the next prompt
         stage("capture", lambda: __import__("capture").process(prompt, tp), None)
     out = [n for _, n in notes]
+    if ctx.enabled("delegation-hook"):  # off until the owner approves tasks/delegation-draft.md
+        out += stage("delegation", lambda: __import__("delegate").input_step(prompt, tp)[0], [])
     if ctx.enabled("recall-hook") and len(prompt.split()) >= 3:
         out += stage("recall", lambda: recall(prompt, tp), [])
     elif not out:

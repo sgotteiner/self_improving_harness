@@ -46,4 +46,5 @@ node_modules/
 /scripts/recall/vectors.db
 /scripts/recall/results/brain_calls.jsonl
 /scripts/recall/history.db
+/scripts/recall/denylist.local.txt
 /scripts/recall/results/hook.log

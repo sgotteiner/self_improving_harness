@@ -5,7 +5,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CASES = os.path.normpath(os.path.join(HERE, "..", "..", "cases"))
 DB = os.path.join(HERE, "cases.db")
 # bm25 column weights: id, situation, lesson, wrong, right (situation highest)
-WEIGHTS = (2.0, 10.0, 3.0, 1.0, 1.0, 5.0)  # + enriched (generated situations)
+WEIGHTS = (2.0, 10.0, 3.0, 1.0, 1.0)
 STOP = set("a an the to of in on at for and or but is are was be it its this that i me my we you do does did "
            "can could should would will just so as with from by if then than not no yes up out about into".split())
 
@@ -28,6 +28,32 @@ def parse(path):
 def unq(s):
     s = s.strip()
     return s[1:-1] if len(s) > 1 and s[0] == s[-1] and s[0] in "\"'" else s
+
+
+PARTS = ("situation", "assistant did", "he did not like", "lesson")  # the parts of one occurrence, in file order
+
+
+def history_records(cid):
+    """Cleaned occurrences of a case from cases/history/<id>.md: [{"date", "source", <PARTS>}]. One block per
+    occurrence, headed `## <date> | <source>`, one `- <part>: <text>` line per part."""
+    p = os.path.join(CASES, "history", cid + ".md")
+    out = []
+    if not os.path.exists(p):
+        return out
+    for line in open(p, encoding="utf-8").read().splitlines():
+        if line.startswith("## "):
+            date, _, src = line[3:].partition(" | ")
+            out.append({"date": date.strip(), "source": src.strip()})
+        elif out and line.startswith("- ") and ": " in line:
+            k, _, v = line[2:].partition(": ")
+            out[-1][k.strip()] = v.strip()
+    return out
+
+
+def history_texts(cid):
+    """One recall document per real occurrence: its situation, what the assistant did, what he did not like. The
+    lesson is not repeated (the case's own lesson is a document of its own)."""
+    return [" ".join(f"{k.capitalize()}: {r[k]}" for k in PARTS[:3] if r.get(k)) for r in history_records(cid)]
 
 
 def case_files():
@@ -55,23 +81,23 @@ def build():
     if os.path.exists(DB):
         os.remove(DB)
     con = sqlite3.connect(DB)
-    con.execute("CREATE VIRTUAL TABLE cases USING fts5(id, situation, lesson, wrong, \"right\", enriched, "
+    con.execute("CREATE VIRTUAL TABLE cases USING fts5(id, situation, lesson, wrong, \"right\", "
                 "tokenize='porter unicode61')")
     con.execute("CREATE TABLE meta(id TEXT PRIMARY KEY, date TEXT, situation TEXT, lesson TEXT, \"right\" TEXT)")
     for f in case_files():
         d = parse(f)
         cid = d.get("id") or os.path.basename(f)[:-3]
         sit = d.get("situation", [])
-        con.execute("INSERT INTO cases VALUES (?,?,?,?,?,?)",
+        con.execute("INSERT INTO cases VALUES (?,?,?,?,?)",
                     (cid.replace("-", " ") + " " + os.path.basename(f), " ".join(sit),
-                     d.get("lesson", ""), d.get("wrong", ""), d.get("right", ""), " ".join(d.get("enriched", []))))
+                     d.get("lesson", ""), d.get("wrong", ""), d.get("right", "")))
         con.execute("INSERT INTO meta VALUES (?,?,?,?,?)",
                     (cid, d.get("date", ""), sit[0] if sit else "", d.get("lesson", ""), d.get("right", "")))
     con.commit()
     con.close()
 
 
-def search(query, k=3, enriched=False):
+def search(query, k=3):
     """Return [(score, id)] best first; score = -bm25 (higher is better). Rebuilds if stale."""
     if stale():
         build()
@@ -79,8 +105,7 @@ def search(query, k=3, enriched=False):
     if not words:
         return []
     q = " OR ".join('"%s"' % w for w in dict.fromkeys(words))
-    if not enriched:
-        q = "{id situation lesson wrong right} : (" + q + ")"  # ignore the generated column
+    q = "{id situation lesson wrong right} : (" + q + ")"
     con = sqlite3.connect(DB)
     w = ",".join(str(x) for x in WEIGHTS)
     rows = con.execute(f"SELECT id, bm25(cases, {w}) FROM cases WHERE cases MATCH ? ORDER BY 2 LIMIT ?", (q, k)).fetchall()
