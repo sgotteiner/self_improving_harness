@@ -1,5 +1,5 @@
 """Transcript and slot helpers shared by the hooks. Transcript = jsonl; a human turn is a user entry with text."""
-import datetime, json, os
+import datetime, json, os, re, time
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 SYSTEM_PREFIXES = ("<task-notification>", "[SYSTEM NOTIFICATION", "<system-reminder>", "<command-name>", "<local-command",
@@ -13,6 +13,24 @@ LOG = os.path.join(ROOT, "scripts", "recall", "results", "hook.log")
 # 0.01 step where at most 1 of 22 unrelated eval queries passes, keeping 28/30 recall. Unrelated text tops out at 0.62
 # median / 0.74 max on this model, so the old 0.60 passed nearly all.
 RELEVANCE_MIN = 0.70
+# cosine above which a draft counts as the same as an existing case/entry/flag. Measured by eval_recall.py: the best
+# different-case/unrelated score is 0.76, so 0.80 keeps a margin (a wrong merge hides a new item; a missed one is a duplicate).
+SAME = 0.80
+HEDGE = re.compile(r"\W*(?:(?:this|it|that)\s+)?(?:(?:may|might|could)\s+(?:well\s+)?be\s+(?:ok|okay|fine)|unclear|possibly|perhaps|not sure)", re.I)
+T0, BUDGET = time.monotonic(), 240  # no new brain call past BUDGET s of the hook's 300 s limit
+
+
+def over_budget(what):
+    """True (and logged) when it is too late to start another brain call for `what`."""
+    late = time.monotonic() - T0 > BUDGET
+    late and log(f"budget: {BUDGET}s used, skipped {what}")
+    return late
+
+
+def hedged(reason):
+    """True when a brain's reason LEADS with a hedge ('this may be OK, ...'): such a verdict must not block. A hedge
+    later in the sentence ('tests were not run; unclear which file') is part of a real finding and does not count."""
+    return bool(HEDGE.match(reason))
 
 
 def log(msg):

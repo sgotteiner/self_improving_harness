@@ -34,7 +34,8 @@ def recall(prompt, transcript):
 
 
 def stage(name, fn, default):
-    """Run one stage; a failure is logged and never stops the others."""
+    """Run one stage; a failure is logged and never stops the others. Past the hook's time budget (ctx.BUDGET of its 300 s
+    limit) brain.ask refuses each new call, so the stages that need it fail fast and the notes still print."""
     try:
         return fn()
     except Exception as e:
@@ -51,13 +52,19 @@ def main():
     if not ctx.is_human(prompt):
         ctx.log("hook: silent, not a human prompt")
         return
+    if ctx.enabled("delegation-hook"):  # first: the setup as it is at his message, before any slow stage; off until approved
+        stage("delegation-snapshot", lambda: __import__("setupstate").save_snapshot(tp), None)
     cap = ctx.enabled("capture")
     notes = stage("ask-notes", lambda: __import__("capture").ask_notes(), []) if cap else []
+    drafted = None
     if cap:  # drafted now, asked at the next prompt
-        stage("capture", lambda: __import__("capture").process(prompt, tp), None)
+        drafted = stage("capture", lambda: __import__("capture").process(prompt, tp), None)
     if ctx.enabled("decision-capture"):  # diary drafts: asked once at the next prompt, like captured mistakes
         notes += stage("diary-notes", lambda: __import__("decisions").ask_notes(), [])
-        stage("decisions", lambda: __import__("decisions").process(prompt, tp), None)
+        if drafted:  # the same message was a correction of his assistant, not a design decision
+            ctx.log("hook: decision detection skipped, mistake capture made a draft from this message")
+        else:
+            stage("decisions", lambda: __import__("decisions").process(prompt, tp), None)
     out = [n for _, n in notes]
     if ctx.enabled("delegation-hook"):  # off until the owner approves tasks/delegation-draft.md
         out += stage("delegation", lambda: __import__("delegate").input_step(prompt, tp)[0], [])
@@ -65,6 +72,8 @@ def main():
         out += stage("recall", lambda: recall(prompt, tp), [])
     elif not out:
         ctx.log("hook: silent, recall off or prompt under 3 words")
+    if ctx.enabled("flags-capture"):  # agents' own choices -> the project's flags file; last, it is the least urgent
+        stage("flags", lambda: __import__("flags").process(tp), [])
     text, shown = "", 0
     for line in out:
         if len(text) + len(line) + 1 > OUT_MAX:
@@ -74,7 +83,7 @@ def main():
     if text:
         print(text.rstrip("\n"), flush=True)
     for p, _ in notes[:shown]:  # marked asked only after the note was printed
-        stage("mark-asked", lambda: __import__("capture").mark_asked(p), None)
+        stage("mark-asked", lambda: __import__("pending").mark_asked(p), None)
 
 
 if __name__ == "__main__":

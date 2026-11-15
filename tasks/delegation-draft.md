@@ -26,7 +26,7 @@ Recent conversation:
 The owner's new message: {prompt}
 
 Does his message call for one of these delegations, by the rules above?
-KNOWLEDGE-MANAGER: he says a feature or change is done, finished, or accepted as complete, and the system changed (a feature added, removed or changed).
+KNOWLEDGE-MANAGER: he STATES that a feature or change is done, finished, or accepted as complete, and the system changed (a feature added, removed or changed). Never for a message that only asks a question ("is the sdd also updated?": NONE); a message that says it is done AND also asks something still counts (the code does not filter questions: the wording decides).
 TEST: he says something does not work, is still broken, or did not change.
 IMPLEMENTER: he approves a specific change to be made now (picks an option, says go ahead, yes do it).
 Anything else is NONE: a question, a request for an explanation, a discussion, planning, thanks, a color or a text change. Be strict: when unsure, NONE.
@@ -41,7 +41,7 @@ Instruction lines attached to the main session's context (the fixed part; the br
 
 ## Output step (gate.py, before the reply)
 
-Placeholders: `{rules}`, `{human}` (his latest message), `{tools}` (the turn's tool calls: files edited with the change, agents called, commands run), `{text}` (the final message), `{facts}` (counted by the code from the transcript, not remembered: the order of implementer and tester agent calls since his latest message with the number of completed implementer-to-tester rounds, and the setup files edited since then, not counting pending drafts or the to-do list, with whether the setup-manager was called).
+Placeholders: `{rules}`, `{human}` (his latest message), `{tools}` (the turn's tool calls: files edited with the change, agents called, commands run), `{text}` (the final message), `{facts}` (counted by the code, not remembered: the agent types called or resumed since his latest message (a SendMessage to an agent counts as calling it), the order of implementer and tester calls with the completed rounds, the setup files edited since then (from git, not counting pending drafts, generated files or the to-do list) and whether the setup-manager was called after the edit, and the background agents started this turn that have not returned yet), `{max_rounds}` (the loop's round limit, a constant in the code).
 
 ```text
 The rules of this setup (the core of its CLAUDE.md):
@@ -62,8 +62,9 @@ Apply the three questions to this turn, from why he asked:
 TESTER: logic or code was changed and its purpose is measurable (behavior, a number, a strategy), and no test, measurement or tester agent ran this turn.
 REVIEWER: a new feature or a logic change was made and no reviewer agent was called this turn.
 KNOWLEDGE-MANAGER: he said the feature or change is done, the system changed, and no knowledge-manager agent was called this turn.
-LOOP: the core's loop (question 1: the measured purpose fell short, implementer then tester, at most 2 rounds, then back to him with the evidence). Read the results of the tester or test in this turn. (a) A test or tester result says the measured purpose fell short, the facts show fewer than 2 completed rounds, and no implementer round was started after that result: reason "start round N: implementer with the evidence, then the tester" (N = completed rounds + 1). (b) The facts show 2 completed rounds and the last result still fell short, and this turn started a third implementer round or ended without giving him the evidence: reason "2 rounds done: stop and bring him the evidence". A result that met the purpose, or no result: not LOOP.
-SETUP-MANAGER: the facts list setup files edited and say the setup-manager was not called. The setup-manager owns git, hooks, slots, the shelf, vetting tools, cases and replay; every change is a commit with its why, with a scan for secrets and personal data before any push.
+LOOP: the core's loop (question 1: the measured purpose fell short, implementer then tester, at most {max_rounds} rounds, then back to him with the evidence). Read the results of the tester or test in this turn. (a) A test or tester result says the measured purpose fell short, the facts show fewer than {max_rounds} completed rounds, and no implementer round was started after that result: reason "start round N: implementer with the evidence, then the tester" (N = completed rounds + 1). (b) The facts show {max_rounds} completed rounds and the last result still fell short, and this turn started a third implementer round or ended without giving him the evidence: reason "{max_rounds} rounds done: stop and bring him the evidence". A result that met the purpose, or no result: not LOOP.
+SETUP-MANAGER: the facts list setup files edited and say the setup-manager was not called after the edit. The setup-manager owns git, hooks, slots, the shelf, vetting tools, cases and replay; every change is a commit with its why, with a scan for secrets and personal data before any push.
+A change that a background agent is still making (the facts list it as not returned yet) cannot be tested, reviewed or documented yet: for TESTER, REVIEWER and KNOWLEDGE-MANAGER report only if the final message claims the work is done (the code checks the words of the final message itself). An agent called or resumed this turn (the facts list its type) counts as called.
 A color, a text, a style, a typo, a rename with no behavior change; a question or explanation; no file edited and he did not say it is done: OK. Be strict: when unsure, OK.
 If several apply, report the first in this order: LOOP, TESTER, REVIEWER, KNOWLEDGE-MANAGER, SETUP-MANAGER.
 Reply 'OK' or 'BLOCK <LOOP|TESTER|REVIEWER|KNOWLEDGE-MANAGER|SETUP-MANAGER> | <one short sentence: what was changed and what is missing; for LOOP the reason given above>'.
@@ -77,7 +78,7 @@ Block reasons (the fixed lead; the brain's sentence follows):
 - LOOP: Delegation gate (core rule 1, the loop):
 - SETUP-MANAGER: Delegation gate: call the setup-manager with what changed and why: it commits with the why, scans before any push, and runs the replay if cases changed.
 
-The gate never blocks twice in a row (`stop_hook_active`), and fails open: any error means no block.
+The gate never blocks twice in a row (`stop_hook_active`), and fails open: any error means no block. The code also drops a BLOCK when the agent it asks for was called or resumed this turn, when the setup-manager was called after the edit, or when the brain's reason leads with a hedge ("this may be OK, ...", "unclear ...", "possibly ..."; a hedge later in a real finding does not count), and it skips the brain call when the turn edited nothing, called no agent and claimed nothing. When the lesson check and the delegation check both fail, their reasons come in one block.
 
 ## Questions for him
 

@@ -30,6 +30,10 @@ Next things, in order. Done items get checked, not deleted. The plan: [plan.md](
 - [ ] review captured case `keep-stated-intent-over-numeric-proxy` (cases/_pending/keep-stated-intent-over-numeric-proxy.md): add, edit or discard
 - [ ] review captured case `attributing-ownership-from-presence` (cases/_pending/attributing-ownership-from-presence.md): add, edit or discard
 - [ ] review captured case `missing-loop-named-as-missing-judge` (cases/_pending/missing-loop-named-as-missing-judge.md): add, edit or discard
+- [ ] review captured case `sweep-all-docs-for-stale-fact` (cases/_pending/sweep-all-docs-for-stale-fact.md): add, edit or discard
+- [ ] review captured case `code-first-then-sdd-after-approval` (cases/_pending/code-first-then-sdd-after-approval.md): add, edit or discard
+- [ ] review captured case `rejected-invented-format-constraints-ignored-owner-answers` (cases/_pending/rejected-invented-format-constraints-ignored-owner-answers.md): add, edit or discard
+- [ ] diary entry suggested `unstated-reasons-become-not-stated-inferred-reasons-go-to-fl` (diary-pending/unstated-reasons-become-not-stated-inferred-reasons-go-to-fl.md): add or discard
 Done
 - [x] 2026-11-14 — gate false block fixed: a background-agent notification now starts a new turn and its result is evidence; "Stop hook feedback" no longer counts as his message. Replayed the false-block transcript 3×: no block (brain consulted each time)
 - [x] 2026-11-13 — every project keeps a Todo (fifth document): CLAUDE.md + knowledge-manager rules

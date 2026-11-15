@@ -6,7 +6,7 @@
    case must be found. Compared: the case's own fields only vs fields plus the other occurrences as examples."""
 import json, math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import capture, ctx, embed, index, retrieve
+import ctx, embed, index, retrieve
 
 CONFIGS = [("bm25", "-"), ("emb", "model2vec"), ("emb", "fastembed"), ("hybrid", "model2vec"), ("hybrid", "fastembed")]
 
@@ -33,7 +33,7 @@ def cutoffs(rows):
     """Score distributions for the method the hooks use (emb, fastembed) and the two cutoffs they need.
     RELEVANCE_MIN: the lowest 0.01 step where at most 1 unrelated query passes (~5%); the strict second brain call
     is the real filter, this only saves it on clearly unrelated text.
-    SAME (capture.py): same-case paraphrase scores vs best other-case / unrelated scores."""
+    SAME (ctx.py): same-case paraphrase scores vs best other-case / unrelated scores."""
     own, other, neg = [], [], []
     for r in rows:
         sc = embed.scores(r["q"], retrieve.docs(True), "fastembed")
@@ -51,7 +51,7 @@ def cutoffs(rows):
     diff = other + neg
     print(f"  SAME: same case min {min(own):.3f}, different case/unrelated max {max(diff):.3f}, "
           f"same cases below the max different: {sum(v <= max(diff) for v in own)}/{len(own)}")
-    print(f"  SAME floor (0 wrong merges) = {math.ceil((max(diff) + 0.001) * 100) / 100:.2f}; capture.SAME = {capture.SAME} keeps a margin")
+    print(f"  SAME floor (0 wrong merges) = {math.ceil((max(diff) + 0.001) * 100) / 100:.2f}; ctx.SAME = {ctx.SAME} keeps a margin")
     for t in (0.70, 0.75, 0.80, 0.85):
         print(f"    SAME={t:.2f}: merges {sum(v >= t for v in own)}/{len(own)} paraphrases, wrongly merges {sum(v >= t for v in diff)}/{len(diff)} different")
 

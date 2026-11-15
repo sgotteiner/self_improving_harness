@@ -1,5 +1,8 @@
 """Bare brain: one cheap-model call with minimal context. Sets RECALL_BRAIN=1 so no recall hook re-fires."""
-import json, os, shutil, subprocess, tempfile
+import json, os, shutil, subprocess, sys, tempfile
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ctx
 
 CLAUDE = shutil.which("claude")
 LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", "brain_calls.jsonl")
@@ -11,7 +14,11 @@ TIMEOUT = 60  # seconds per call; hook.py and gate.py timeouts in settings.json 
 
 
 def ask(prompt, system="Answer tersely and exactly as instructed.", tag=""):
-    """Return (text, tokens). Tokens = all usage counters summed; appended to results/brain_calls.jsonl."""
+    """Return (text, tokens). Tokens = all usage counters summed; appended to results/brain_calls.jsonl.
+    Raises TimeoutError, without calling, when the process's time budget (ctx.BUDGET) is used up: the check is here so it
+    runs before every call, whichever hook or stage makes it."""
+    if ctx.over_budget(tag or "brain call"):
+        raise TimeoutError("time budget of this hook is used up")
     os.makedirs(CWD, exist_ok=True)
     env = dict(os.environ, RECALL_BRAIN="1")
     p = subprocess.run([CLAUDE] + FLAGS + ["--system-prompt", system], input=prompt, capture_output=True,

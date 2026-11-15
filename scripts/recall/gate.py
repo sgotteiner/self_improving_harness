@@ -1,10 +1,11 @@
 """Stop hook (output gate). A brain checks the last assistant turn and its tool calls against the cases retrieved for
 it. A clear violation -> {"decision":"block","reason":...} so the session continues and fixes it. Honors
-stop_hook_active (never blocks twice in a row). Never fails the stop: any error -> exit 0."""
+stop_hook_active (never blocks twice in a row). The delegation check (delegate.py) runs too and both reasons come in one block. Never fails the stop: any error -> exit 0."""
 import json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ctx  # stdlib only; brain/capture/retrieve import numpy and fastembed, so they load inside main()
+STOP_LIMIT = 180  # the Stop timeout in settings.json; no new brain call starts after STOP_LIMIT - brain.TIMEOUT seconds
 
 PROMPT = ("Cases (lessons from earlier mistakes of this assistant):\n{cases}\n\nThe assistant's latest turn.\n"
           "Tool calls this turn:\n{tools}\n\nFinal message:\n{text}\n\nDoes this turn CLEARLY violate one of the cases "
@@ -34,33 +35,47 @@ def check(tp):
     return None
 
 
+def delegation(tp):
+    """The delegation gate's block reason, or None. Any error is logged and counts as no block."""
+    if not ctx.enabled("delegation-hook"):
+        return None
+    try:
+        import delegate
+        d, _ = delegate.output_step(tp)
+        return d[1] if d else None
+    except Exception as e:
+        ctx.log(f"gate: delegation failed: {e!r}")
+        return None
+
+
 def main():
     if ctx.skip_env("RECALL_GATE") or not ctx.enabled("output-gate"):
         return
+    import brain
+    ctx.BUDGET = STOP_LIMIT - brain.TIMEOUT
     d = json.load(sys.stdin)
     if d.get("stop_hook_active"):
         return
     tp = d.get("transcript_path", "")
-    r = check(tp)
-    if not r and ctx.enabled("delegation-hook"):  # off until the owner approves tasks/delegation-draft.md
-        try:
-            import delegate
-            d, _ = delegate.output_step(tp)
-            if d:
-                print(json.dumps({"decision": "block", "reason": d[1]}))
-        except Exception as e:
-            ctx.log(f"gate: delegation failed: {e!r}")
-        return
-    if not r:
-        return
-    cid, why = r
-    if ctx.enabled("capture"):
-        try:
-            import capture
-            capture.from_gate(cid, why, tp)
-        except Exception as e:
-            ctx.log(f"gate: capture failed: {e!r}")
-    print(json.dumps({"decision": "block", "reason": f"Output gate (cases/{cid}.md): {why} Fix this now, then finish."}))
+    r = check(tp)  # both checks always run, so one block carries every reason (a block from one never hides the other)
+    reasons = []
+    if r and ctx.hedged(r[1]):
+        ctx.log(f"gate: violation of cases/{r[0]}.md dropped, its own reason hedges: {r[1]}")
+        r = None
+    if r:
+        cid, why = r
+        if ctx.enabled("capture"):
+            try:
+                import capture
+                capture.from_gate(cid, why, tp)
+            except Exception as e:
+                ctx.log(f"gate: capture failed: {e!r}")
+        reasons.append(f"Output gate (cases/{cid}.md): {why} Fix this now, then finish.")
+    dr = delegation(tp)
+    if dr:
+        reasons.append(dr)
+    if reasons:
+        print(json.dumps({"decision": "block", "reason": "\n".join(reasons)}))
 
 
 if __name__ == "__main__":
