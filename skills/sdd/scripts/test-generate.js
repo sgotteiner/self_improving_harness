@@ -1,6 +1,6 @@
 // Generator tests: determinism, one-box diffs, git (commit, uncommitted, --dirty, untracked, --commit), the validator gate.
 const { fs, path, sys, run, gen, check, tmp, good, write, read, t, repo } = require("./test-helpers");
-const { readT, MARK } = require("../../system-map/scripts/map-data");
+const { readT, MARK, UNCOMMITTED } = require("../../system-map/scripts/map-data");
 const find = (n, id) => n.id === id ? n : (n.children || []).map(c => find(c, id)).find(Boolean);
 const order = (n) => (n.children || []).map(c => c.id).join(",");
 
@@ -52,7 +52,7 @@ r = gen(sp, path.join(tmp, "mapd.html"));
 t("generator: refuses an SDD with uncommitted changes", r.code === 1 && r.out.startsWith("my sdd.md has uncommitted changes"), r.out.split("\n")[0]);
 const mapy = path.join(tmp, "mapy.html");
 r = gen(sp, mapy, "--dirty");
-t("generator --dirty: draws it with sddCommit \"uncommitted\"", r.code === 0 && readT(read(mapy)).sddCommit === "uncommitted" && find(readT(read(mapy)), "extra") !== undefined, r.out.trim());
+t("generator --dirty: draws it with sddCommit UNCOMMITTED", r.code === 0 && readT(read(mapy)).sddCommit === UNCOMMITTED && find(readT(read(mapy)), "extra") !== undefined, r.out.trim());
 const mapc = path.join(tmp, "mapc.html");
 r = gen(sp, mapc, "--commit", c1);
 t("generator --commit: draws the SDD as it was at that commit", r.code === 0 && readT(read(mapc)).sddCommit === c1 && find(readT(read(mapc)), "extra") === undefined, r.out.trim());

@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SYSTEM NAME Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a signal-flow desk. Level 0 is the pipeline lane plus a shared-services lane;
+   each click opens the chosen item's own level underneath, joined to it by a patch line. */
+:root{
+  --bg:#f3f5f7; --panel:#ffffff; --sunk:#e8ecf0; --line:#cfd6de; --fg:#16202a; --muted:#5a6876;
+  --accent:#1f5fd1; --accent-soft:#dfe8fb;
+  --k-service:#1f5fd1; --k-agent:#b4441f; --k-step:#2f7d4f; --k-source:#7b4fc2; --k-store:#9a6a00; --k-external:#4d6070; --k-group:#5a6876;
+  --warn:#a8331b;
+  --display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141a; --panel:#161d25; --sunk:#1c252f; --line:#2c3845; --fg:#e4e9ef; --muted:#93a1b0;
+  --accent:#7aa5ff; --accent-soft:#1d2b47;
+  --k-service:#7aa5ff; --k-agent:#f08a62; --k-step:#6cc58f; --k-source:#b993f5; --k-store:#e0b54a; --k-external:#9fb1c2; --k-group:#93a1b0;
+  --warn:#ff8c6e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --panel:#161d25; --sunk:#1c252f; --line:#2c3845; --fg:#e4e9ef; --muted:#93a1b0;
+  --accent:#7aa5ff; --accent-soft:#1d2b47;
+  --k-service:#7aa5ff; --k-agent:#f08a62; --k-step:#6cc58f; --k-source:#b993f5; --k-store:#e0b54a; --k-external:#9fb1c2; --k-group:#93a1b0;
+  --warn:#ff8c6e; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header h1{font-family:var(--display);font-stretch:78%;font-weight:800;font-size:clamp(30px,5vw,46px);line-height:1;letter-spacing:-.01em;margin:0;text-wrap:balance}
+header p{color:var(--muted);max-width:68ch;margin:10px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:16px 0 0;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+.crumbs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin:22px 0 0;padding:10px 0;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:13.5px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.crumbs button{font:inherit;background:none;border:0;color:var(--accent);cursor:pointer;padding:2px 4px;border-radius:4px}
+.crumbs button:hover{text-decoration:underline}
+.crumbs .sep{color:var(--muted)}
+.crumbs .here{font-weight:600;padding:2px 4px}
+
+.level{margin-top:18px}
+.lane{margin-top:14px}
+.lane-label{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.row{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px}
+.row.flow{gap:0;row-gap:12px}
+.arrow{display:flex;align-items:center;justify-content:center;width:26px;color:var(--muted);font-family:var(--mono);font-size:15px;flex:0 0 auto}
+
+.card{--k:var(--k-group);position:relative;text-align:left;font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px 11px 14px;cursor:pointer;width:220px;min-width:0;display:flex;flex-direction:column;gap:3px;transition:border-color .12s, transform .12s, box-shadow .12s}
+.card::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 2px 2px 0;background:var(--k)}
+.card:hover{border-color:var(--k);transform:translateY(-1px)}
+.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card.on{border-color:var(--k);box-shadow:0 0 0 1px var(--k) inset;background:var(--sunk)}
+.card .kind{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--k)}
+.card .name{font-family:var(--display);font-stretch:88%;font-weight:700;font-size:17px;line-height:1.15}
+.card .tag{font-size:12.5px;color:var(--muted);line-height:1.35}
+.card .preview{font-size:12.5px;line-height:1.4;color:var(--fg);opacity:.82;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;margin-top:3px}
+.card .more{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:auto;padding-top:4px}
+.card[data-k="service"]{--k:var(--k-service)} .card[data-k="agent"]{--k:var(--k-agent)} .card[data-k="step"]{--k:var(--k-step)}
+.card[data-k="source"]{--k:var(--k-source)} .card[data-k="store"]{--k:var(--k-store)} .card[data-k="external"]{--k:var(--k-external)}
+
+.panel{margin-top:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:16px 18px 18px;position:relative}
+.panel::before{content:"";position:absolute;left:28px;top:-15px;height:14px;border-left:2px dashed var(--line)}
+.panel h2{font-family:var(--display);font-stretch:82%;font-weight:800;font-size:24px;line-height:1.1;margin:0;text-wrap:balance}
+.panel .sub{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.panel .desc{max-width:72ch;margin:8px 0 0}
+.panel ul.facts{margin:10px 0 0;padding-left:18px;max-width:78ch}
+.panel ul.facts li{margin:3px 0}
+.meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;font-size:13px;color:var(--muted)}
+code,.file{font-family:var(--mono);font-size:12.5px;background:var(--sunk);border-radius:4px;padding:1px 5px;word-break:break-word}
+.talks{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.talks .t{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;font-size:13.5px}
+.talks button{font:inherit;font-weight:600;background:var(--accent-soft);color:var(--accent);border:0;border-radius:4px;padding:1px 7px;cursor:pointer}
+.talks button:hover{text-decoration:underline}
+.note{margin-top:12px;font-size:13px;color:var(--warn);max-width:76ch}
+.children-label{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.leafhint{margin-top:14px;font-size:12.5px;color:var(--muted)}
+footer{margin-top:36px;font-size:12.5px;color:var(--muted);max-width:80ch}
+
+@media (max-width:640px){
+  .row.flow{flex-direction:column;align-items:stretch}
+  .row.flow .arrow{width:auto;height:20px;transform:rotate(90deg)}
+  .card{width:100%}
+  .row:not(.flow) .card{width:100%}
+}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>SYSTEM NAME Map</h1>
+  <p>ONE SENTENCE: what this system does, in plain words. Click any box to see how it works inside. Read from SOURCE (DATE).</p>
+  <div class="legend" id="legend"></div>
+</header>
+<nav class="crumbs" id="crumbs" aria-label="Path"></nav>
+<main id="levels"></main>
+<footer>Read from the code on DATE. Items marked in red are open questions, not facts.</footer>
+</div>
+
+<script>
+const KINDS={service:"Railway service",step:"Pipeline step",agent:"Reporter / AI writer",source:"News source",store:"Shared store",external:"Outside service",group:"Group"};
+
+const T={id:"root",name:"SYSTEM NAME",children:[
+/* Top level = the story: 3-7 boxes in the real order, each desc ONE plain sentence answering "what happens here". */
+{id:"step1",lane:"flow",kind:"step",name:"First step",tag:"Plain words",desc:"One everyday sentence: what happens here and why.",
+ flow:true,children:[
+  {id:"step1a",kind:"step",name:"How it works",tag:"Detail",desc:"One plain sentence first.",facts:["The criteria: what passes, what fails","The numbers: thresholds, caps, schedules (setting that changes it)","A real example from the code","Where it lives: file"],file:"path/to/file"}
+ ]},
+{id:"step2",lane:"flow",kind:"step",name:"Second step",tag:"Plain words",desc:"One everyday sentence."},
+{id:"store",lane:"support",kind:"store",name:"What is remembered",tag:"Where and when",desc:"One everyday sentence."},
+{id:"open",lane:"support",kind:"group",name:"Open questions",tag:"Unknown or unresolved",desc:"Everything not yet known, kept apart from the explanation.",children:[]}
+]};
+
+/* ───────── index ───────── */
+const byId={}, parentOf={};
+(function idx(n,p){byId[n.id]=n; if(p) parentOf[n.id]=p.id; (n.children||[]).forEach(c=>idx(c,n));})(T,null);
+function pathTo(id){const p=[];let x=id;while(x&&x!=="root"){p.unshift(x);x=parentOf[x];}return p;}
+
+let path=[]; // selected ids, one per level
+
+function el(tag,attrs,...kids){const e=document.createElement(tag);for(const k in attrs||{}){if(k==="class")e.className=attrs[k];else if(k==="text")e.textContent=attrs[k];else e.setAttribute(k,attrs[k]);}kids.flat().forEach(c=>c!=null&&e.append(c));return e;}
+
+function card(n,level){
+  const kids=(n.children||[]).length;
+  const b=el("button",{class:"card"+(path[level]===n.id?" on":""),"data-k":n.kind||"group",type:"button","aria-expanded":path[level]===n.id?"true":"false"},
+    el("span",{class:"kind",text:KINDS[n.kind]||"Group"}),
+    el("span",{class:"name",text:n.name}),
+    n.tag?el("span",{class:"tag",text:n.tag}):null,
+    n.desc?el("span",{class:"preview",text:n.desc}):null,
+    el("span",{class:"more",text:kids?`${kids} inside ▾`:"details ▾"}));
+  b.onclick=()=>{ path=path.slice(0,level); if(path[level]!==n.id) path[level]=n.id; render(true,level); };
+  if(path[level]===n.id) b.onclick=()=>{ path=path.slice(0,level); render(true,level); };
+  return b;
+}
+
+function row(nodes,level,flow){
+  const r=el("div",{class:"row"+(flow?" flow":"")});
+  nodes.forEach((n,i)=>{ if(flow&&i) r.append(el("span",{class:"arrow","aria-hidden":"true",text:"→"})); r.append(card(n,level)); });
+  return r;
+}
+
+function panel(n,level){
+  const p=el("section",{class:"panel",id:"p-"+n.id});
+  const kc=getComputedStyle(document.documentElement).getPropertyValue("--k-"+(n.kind||"group"));
+  p.append(el("div",{class:"sub",style:`color:var(--k-${n.kind||"group"})`,text:KINDS[n.kind]||"Group"}));
+  p.append(el("h2",{text:n.name}));
+  if(n.desc) p.append(el("p",{class:"desc",text:n.desc}));
+  if(n.facts&&n.facts.length){const u=el("ul",{class:"facts"});n.facts.forEach(f=>u.append(el("li",{text:f})));p.append(u);}
+  if(n.file) p.append(el("div",{class:"meta"},el("span",{},"Code: ",el("span",{class:"file",text:n.file}))));
+  if(n.talks&&n.talks.length){
+    const t=el("div",{class:"talks"});
+    n.talks.forEach(x=>{const target=byId[x.to]; if(!target) return;
+      const b=el("button",{type:"button",text:target.name}); b.onclick=()=>{path=pathTo(x.to);render(true);};
+      t.append(el("div",{class:"t"},el("span",{text:"Talks to"}),b,el("span",{style:"color:var(--muted)",text:"· "+x.how})));});
+    p.append(t);
+  }
+  if(n.note) p.append(el("p",{class:"note",text:n.note}));
+  const kids=n.children||[];
+  if(kids.length){
+    p.append(el("div",{class:"children-label",text:n.flow?`Inside ${n.name} · in order`:`Inside ${n.name}`}));
+    p.append(row(kids,level+1,n.flow));
+    const sel=path[level+1]&&byId[path[level+1]];
+    if(sel) p.append(panel(sel,level+1));
+  } else {
+    p.append(el("div",{class:"leafhint",text:"Nothing nested further."}));
+  }
+  return p;
+}
+
+function render(scroll,changedLevel){
+  const root=document.getElementById("levels"); root.innerHTML="";
+  const lv=el("div",{class:"level"});
+  const flow=T.children.filter(n=>n.lane==="flow"), sup=T.children.filter(n=>n.lane==="support");
+  lv.append(el("div",{class:"lane"},el("div",{class:"lane-label",text:/*lane:flow*/"The pipeline · news to video"}),row(flow,0,true)));
+  lv.append(el("div",{class:"lane"},el("div",{class:"lane-label",text:/*lane:support*/"Shared services · used by every step"}),row(sup,0,false)));
+  root.append(lv);
+  if(path[0]) root.append(panel(byId[path[0]],0));
+  // crumbs
+  const c=document.getElementById("crumbs"); c.innerHTML="";
+  const home=el("button",{type:"button",text:T.name}); home.onclick=()=>{path=[];render(true);};
+  c.append(home);
+  path.forEach((id,i)=>{c.append(el("span",{class:"sep",text:"›"}));
+    if(i===path.length-1) c.append(el("span",{class:"here",text:byId[id].name}));
+    else {const b=el("button",{type:"button",text:byId[id].name}); b.onclick=()=>{path=path.slice(0,i+1);render(true);}; c.append(b);} });
+  if(!path.length) c.append(el("span",{class:"sep",text:"· click a box to open it"}));
+  try{localStorage.setItem("map-path:"+T.name,JSON.stringify(path));}catch(e){}
+  if(scroll&&path.length){const last=document.getElementById("p-"+path[path.length-1]); if(last) last.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"nearest"});}
+}
+
+/* legend */
+const lg=document.getElementById("legend");
+Object.entries(KINDS).forEach(([k,v])=>lg.append(el("span",{},el("i",{style:`background:var(--k-${k})`}),v)));
+
+/* start with the Agents open, so the first view shows the nesting */
+try{const s=JSON.parse(localStorage.getItem("map-path:"+T.name)||"null"); if(Array.isArray(s)&&s.every(id=>byId[id])) path=s;}catch(e){}
+/* Opens at the top level (the story), nothing expanded. */
+render(false);
+</script>
+
+</body>
+</html>

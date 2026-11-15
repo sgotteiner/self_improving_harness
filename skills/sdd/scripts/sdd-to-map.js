@@ -3,7 +3,7 @@
 // Usage: node sdd-to-map.js <sdd.md> <map.html> [--template <template.html>] [--commit <id>] [--dirty]
 //   (default)        reads the working-tree SDD; it must have no uncommitted changes if it is tracked by git
 //   --commit <id>    reads the SDD as it was at that commit (git show)
-//   --dirty          allow uncommitted changes (sddCommit is then "uncommitted")
+//   --dirty          allow uncommitted changes (sddCommit is then UNCOMMITTED, see map-data.js)
 //   The SDD must pass the full validator (validate-sdd.js rules, without --since). An SDD not tracked by git is drawn
 //   without sddCommit.
 // If <map.html> exists its data T, title, h1, intro and footer are replaced (its rendering code stays); otherwise it
@@ -14,6 +14,8 @@ const fs = require("fs");
 const path = require("path");
 const { parse, validate, list, filesOf, show, git, repoPath } = require("./sdd-lib");
 const { writePage } = require("./map-page");
+const { UNCOMMITTED } = require("../../system-map/scripts/map-data");
+const { ordered, inFlow } = require("./sdd-order");
 
 const args = process.argv.slice(2);
 const flag = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : null; };
@@ -38,7 +40,7 @@ if (commit) {
   if (tracked) {
     const dirty = git(sddFile, ["status", "--porcelain", "--", path.basename(sddFile)]) !== "";
     if (dirty && !args.includes("--dirty")) fail(`${path.basename(sddFile)} has uncommitted changes: commit the SDD first (the map records the commit it was drawn from), or use --commit <id>, or --dirty`);
-    sddCommit = dirty ? "uncommitted" : git(sddFile, ["log", "-1", "--format=%H", "--", path.basename(sddFile)]);
+    sddCommit = dirty ? UNCOMMITTED : git(sddFile, ["log", "-1", "--format=%H", "--", path.basename(sddFile)]);
   }
 }
 
@@ -46,19 +48,6 @@ if (commit) {
 const { out: problems } = validate(text);
 if (problems.length) fail("the SDD fails the validator:\n" + problems.map(e => `  line ${e.line}: ${e.title}: ${e.msg}`).join("\n"));
 const { root } = parse(text);
-
-// ---- siblings in flow order: a chain follows `after`; the rest keeps file order
-function ordered(kids) {
-  const ids = new Set(kids.map(k => k.fields.id));
-  const next = new Map();
-  kids.forEach(k => { if (k.fields.after && ids.has(k.fields.after)) next.set(k.fields.after, k); });
-  const out = [], placed = new Set();
-  const place = (k) => { while (k && !placed.has(k)) { placed.add(k); out.push(k); k = next.get(k.fields.id); } };
-  kids.forEach(k => { if (!(k.fields.after && ids.has(k.fields.after))) place(k); });
-  kids.forEach(k => place(k));  // anything left (a loop) in file order
-  return out;
-}
-const inFlow = (k, kids) => !!k.fields.after || kids.some(o => o.fields.after === k.fields.id);
 
 function box(s, top, siblings) {
   const f = s.fields, kids = ordered(s.children);

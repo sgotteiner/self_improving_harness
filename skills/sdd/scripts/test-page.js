@@ -1,6 +1,6 @@
 // Map page tests: HTML escaping, refreshed page texts, missing markers, check-structure on a broken page, readT.
 const { fs, path, fx, gen, check, tmp, good, write, read, t, repo } = require("./test-helpers");
-const { readT, MARK, pageProblems } = require("../../system-map/scripts/map-data");
+const { readT, MARK, UNCOMMITTED, pageProblems } = require("../../system-map/scripts/map-data");
 const find = (n, id) => n.id === id ? n : (n.children || []).map(c => find(c, id)).find(Boolean);
 const hostile = '</script><script>alert(1)</script> <!-- & "q"';
 const evil = good.replace("# Order Desk\nfeature: A small shop system that takes customer orders and gets them packed and sent.",
@@ -19,6 +19,8 @@ const head = html.slice(0, html.indexOf("<script>"));
 t("page: title, h1, intro are HTML-escaped", head.includes("<title>Order &lt;/title&gt;&lt;b&gt;Desk&lt;/b&gt; &amp; Co Map</title>") && head.includes("<h1>Order &lt;/title&gt;&lt;b&gt;Desk&lt;/b&gt; &amp; Co Map</h1>") && head.includes('<p>A shop &lt;script&gt;x&lt;/script&gt; &amp; "more". Click any box'), head.match(/<p>.*<\/p>/)[0]);
 t("page: check-structure passes the evil page", check(mapE).out.trim() === "structure ok; 9 nodes", check(mapE).out.trim());
 
+const withComment = html.replace('"name": "Take the order"', '"name": "<!-- x"').replace("\\u003c!--", "<!--");
+t("pageProblems: a <!-- in the data is reported", withComment.includes("<!-- x") && pageProblems(withComment).some(m => m.includes("<!--")), pageProblems(withComment).join());
 // ---- check-structure detects a broken page
 const broken = path.join(tmp, "broken.html");
 fs.writeFileSync(broken, html.replace('"name": "Take the order"', '"name": "</script>x"'.replace("</script>", "</script>")));
@@ -46,9 +48,14 @@ r = gen(sp, mapR);
 const h2 = read(mapR);
 t("regenerate: title, h1, intro with the commit, footer refreshed on an existing map", r.code === 0 && h2.includes("<title>Shop Desk Map</title>") && h2.includes("<h1>Shop Desk Map</h1>") && h2.includes(`<p>A renamed shop system. Click any box to see how it works inside. Drawn from the SDD at commit ${c2.slice(0, 7)}.</p>`) && h2.includes("<footer>Drawn from the SDD by sdd-to-map.js.") && !h2.includes("STALE"), r.out.trim());
 // ---- a missing template marker fails loudly and writes nothing
-for (const [label, edit] of [["<footer>", (s) => s.replace("<footer>", "<div>")], ["<h1>", (s) => s.replace("<h1>", "<h2>")], ["lane title", (s) => s.replace("The pipeline · news to video", "x")], ["data marker", (s) => s.replace(MARK, "/* x")]]) {
+for (const [label, edit] of [["<footer>", (s) => s.replace("<footer>", "<div>")], ["<h1>", (s) => s.replace("<h1>", "<h2>")], ["lane title", (s) => s.replace("/*lane:flow*/", "")], ["data marker", (s) => s.replace(MARK, "/* x")]]) {
   const tpl = write("tpl.html", edit(read(path.join(__dirname, "..", "..", "system-map", "assets", "template.html"))));
   const out = path.join(tmp, "tpl-out.html");
   r = gen(write("g2.md", good), out, "--template", tpl);
   t(`generator: template without ${label} fails loudly, writes nothing`, r.code === 1 && /marker not found|has no <script>/.test(r.out) && !fs.existsSync(out), r.out.trim().slice(0, 120));
 }
+
+// ---- the template must reach a fresh clone (a .gitignore rule once hid every skills/**/assets/ file)
+const tplPath = path.join(__dirname, "..", "..", "system-map", "assets", "template.html");
+const ign = require("child_process").spawnSync("git", ["-C", path.dirname(tplPath), "add", "--dry-run", tplPath]);  // fails for an ignored file
+t("template: not ignored by git, so a fresh clone can build maps", ign.status === 0, `git add --dry-run status ${ign.status}: ${ign.stderr}`);

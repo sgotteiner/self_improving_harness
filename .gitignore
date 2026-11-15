@@ -17,7 +17,9 @@
 
 # skills: no media assets, no claude.ai-synced copies
 /skills/synced/
-/skills/**/assets/
+/skills/**/assets/*
+# the one asset the map tools need (sdd-to-map.js starts from it): a fresh clone must build maps
+!/skills/system-map/assets/template.html
 *.mp3
 *.mp4
 *.jpeg

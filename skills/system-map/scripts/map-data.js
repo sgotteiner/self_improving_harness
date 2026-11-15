@@ -1,6 +1,7 @@
 // Shared by the map tools: where the data T sits in a map page, how to read it, how to write it safely.
 // The page is: ... <script> ... const T={...}; <MARK> ...rendering code... </script>
 const MARK = "/* ───────── index";
+const UNCOMMITTED = "uncommitted";  // sddCommit of a map drawn from an SDD with uncommitted changes (--dirty)
 
 function bounds(html) {
   const s = html.indexOf("<script");
@@ -30,4 +31,4 @@ function pageProblems(html) {
   return out;
 }
 
-module.exports = { MARK, bounds, readT, serialize, pageProblems };
+module.exports = { MARK, UNCOMMITTED, bounds, readT, serialize, pageProblems };
