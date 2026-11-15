@@ -55,6 +55,9 @@ def main():
     notes = stage("ask-notes", lambda: __import__("capture").ask_notes(), []) if cap else []
     if cap:  # drafted now, asked at the next prompt
         stage("capture", lambda: __import__("capture").process(prompt, tp), None)
+    if ctx.enabled("decision-capture"):  # diary drafts: asked once at the next prompt, like captured mistakes
+        notes += stage("diary-notes", lambda: __import__("decisions").ask_notes(), [])
+        stage("decisions", lambda: __import__("decisions").process(prompt, tp), None)
     out = [n for _, n in notes]
     if ctx.enabled("delegation-hook"):  # off until the owner approves tasks/delegation-draft.md
         out += stage("delegation", lambda: __import__("delegate").input_step(prompt, tp)[0], [])

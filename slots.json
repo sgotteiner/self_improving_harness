@@ -19,6 +19,10 @@
   "capture": {
     "enabled": true
   },
+  "decision-capture": {
+    "enabled": true,
+    "about": "on his message a cheap model detects a design decision and drafts a diary entry into diary-pending/ (local, never pushed); asked once at the next message; his yes -> decisions.py approve appends it to the project's diary (append-only)"
+  },
   "delegation-hook": {
     "enabled": true,
     "about": "hooks tell the main session what to delegate (knowledge-manager, test, implementer) and the output gate blocks a reply that skipped it; wording in tasks/delegation-draft.md, approved by the owner 2026-11-15"
