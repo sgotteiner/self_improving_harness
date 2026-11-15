@@ -18,5 +18,9 @@
   },
   "capture": {
     "enabled": true
+  },
+  "delegation-hook": {
+    "enabled": true,
+    "about": "hooks tell the main session what to delegate (knowledge-manager, test, implementer) and the output gate blocks a reply that skipped it; wording in tasks/delegation-draft.md, approved by the owner 2026-11-15"
   }
 }
