@@ -1,9 +1,8 @@
 // Lists leaf nodes with no facts list and a short description (under 160 characters), for a manual depth review.
 // Usage: node list-shallow.js <map.html>
 const fs = require("fs");
-const h = fs.readFileSync(process.argv[2], "utf8");
-const s = h.slice(h.lastIndexOf("<script>") + 8, h.lastIndexOf("</script>"));
-const T = new Function(s.split("/* ───────── index")[0] + ";return T;")();
+const { readT } = require("./map-data");
+const T = readT(fs.readFileSync(process.argv[2], "utf8"));
 const out = [];
 (function w(x, path) {
   const leaf = !(x.children || []).length;

@@ -3,9 +3,8 @@
 // A vague node that has a `note` (what is unknown) is listed apart, not counted as a failure.
 // Usage: node audit-vague.js <map.html>
 const fs = require("fs");
-const h = fs.readFileSync(process.argv[2], "utf8");
-const s = h.slice(h.lastIndexOf("<script>") + 8, h.lastIndexOf("</script>"));
-const T = new Function(s.split("/* ───────── index")[0] + ";return T;")();
+const { readT } = require("./map-data");
+const T = readT(fs.readFileSync(process.argv[2], "utf8"));
 const VERBS = /\b(check(s|ed|ing)?|verif(y|ies|ied|ying)|scor(e|es|ed|ing)|filter(s|ed|ing)?|classif(y|ies|ied|ying)|rank(s|ed|ing)?|skip(s|ped|ping)?|limit(s|ed|ing)?|cap(s|ped)?|rout(e|es|ed|ing)|retr(y|ies|ied)|approv(e|es|ed|ing|al)|merg(e|es|ed|ing)|dedup\w*|duplicates?|deduplicat\w*|label(s|led)?|decid(e|es|ed)|drop(s|ped)?|block(s|ed)?|flag(s|ged)?|reject(s|ed)?)\b/i;
 const NUM = /\d/;
 const QUOTE = /[“”"]/;

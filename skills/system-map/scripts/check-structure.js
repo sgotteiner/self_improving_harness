@@ -1,10 +1,11 @@
-// Checks the map's data: no duplicate ids, every "talks" target exists, every node has a name and a kind.
+// Checks the map: the page is sound, no duplicate ids, every "talks" target exists, every node has a name.
 // Usage: node check-structure.js <map.html>
 const fs = require("fs");
+const { readT, pageProblems } = require("./map-data");
 const h = fs.readFileSync(process.argv[2], "utf8");
-const s = h.slice(h.lastIndexOf("<script>") + 8, h.lastIndexOf("</script>"));
-const T = new Function(s.split("/* ───────── index")[0] + ";return T;")();
-const ids = {}, problems = [];
+let T;
+const ids = Object.create(null), problems = [];
+try { problems.push(...pageProblems(h)); T = readT(h); } catch (e) { console.log("cannot read the map: " + e.message); process.exit(1); }
 (function w(x) {
   if (ids[x.id]) problems.push("duplicate id " + x.id);
   ids[x.id] = x;

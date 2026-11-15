@@ -4,12 +4,16 @@
 //   (default)        reads the working-tree SDD; it must have no uncommitted changes if it is tracked by git
 //   --commit <id>    reads the SDD as it was at that commit (git show)
 //   --dirty          allow uncommitted changes (sddCommit is then "uncommitted")
-// If <map.html> exists only its T is replaced (its rendering code and text stay); otherwise it starts from the template.
+//   The SDD must pass the full validator (validate-sdd.js rules, without --since). An SDD not tracked by git is drawn
+//   without sddCommit.
+// If <map.html> exists its data T, title, h1, intro and footer are replaced (its rendering code stays); otherwise it
+// starts from the template. A marker that is not found in the page is an error.
 // Boxes: one per section, nested like the headings. name = heading, desc = feature, facts = value, what/how, criteria
 // lines, file = the files line, talks = related, order = after, note = open, sdd = the heading. Root: sdd, sddCommit.
 const fs = require("fs");
 const path = require("path");
-const { parse, list, filesOf, show, git, repoPath } = require("./sdd-lib");
+const { parse, validate, list, filesOf, show, git, repoPath } = require("./sdd-lib");
+const { writePage } = require("./map-page");
 
 const args = process.argv.slice(2);
 const flag = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : null; };
@@ -38,15 +42,10 @@ if (commit) {
   }
 }
 
-// ---- parse and sanity-check (the full rules live in validate-sdd.js)
-const { root, sections, errors } = parse(text);
-if (errors.length) fail("the SDD has format errors (run validate-sdd.js):\n" + errors.map(e => `  line ${e.line}: ${e.title}: ${e.msg}`).join("\n"));
-const seen = new Set();
-for (const s of sections) {
-  if (!s.fields.id || !s.fields.feature) fail(`section "${s.title}" (line ${s.line}) has no id or feature: run validate-sdd.js`);
-  if (seen.has(s.fields.id)) fail(`duplicate id ${s.fields.id}: run validate-sdd.js`);
-  seen.add(s.fields.id);
-}
+// ---- the full validator runs first: a map is never drawn from an SDD that fails it
+const { out: problems } = validate(text);
+if (problems.length) fail("the SDD fails the validator:\n" + problems.map(e => `  line ${e.line}: ${e.title}: ${e.msg}`).join("\n"));
+const { root } = parse(text);
 
 // ---- siblings in flow order: a chain follows `after`; the rest keeps file order
 function ordered(kids) {
@@ -93,22 +92,11 @@ if (sddCommit) T.sddCommit = sddCommit;
 if (root.fields.open) T.note = "Open: " + root.fields.open;
 T.children = top.map(k => box(k, true, top));
 
-// ---- write: replace only T in the existing map (or in the template for a new map)
-const MARK = "/* ───────── index";
+// ---- write: the data T and the page texts from the SDD; an existing map keeps its rendering code
 const exists = fs.existsSync(mapFile);
-let html = fs.readFileSync(exists ? mapFile : template, "utf8");
-const a = html.indexOf("const T="), b = html.indexOf(MARK);
-if (a < 0 || b < 0 || b < a) fail(`${exists ? mapFile : template} has no "const T=" ... "${MARK}" to replace`);
-html = html.slice(0, a) + "const T=" + JSON.stringify(T, null, 1) + ";\n\n" + html.slice(b);
-if (!exists) {
-  const short = sddCommit && sddCommit !== "uncommitted" ? sddCommit.slice(0, 7) : null;
-  html = html.split("SYSTEM NAME Map").join(T.name + " Map")
-    .replace(/<p>ONE SENTENCE:[^<]*<\/p>/, () => `<p>${esc(T.desc || "")} Click any box to see how it works inside. Drawn from the SDD${short ? " at commit " + short : ""}.</p>`)
-    .replace(/<footer>[^<]*<\/footer>/, "<footer>Drawn from the SDD by sdd-to-map.js. Items marked in red are open questions, not facts.</footer>")
-    .replace("The pipeline · news to video", "The flow · in order")
-    .replace("Shared services · used by every step", "Shared parts · used by the flow");
-}
-function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+const src = exists ? mapFile : template;
+let html;
+try { html = writePage(fs.readFileSync(src, "utf8"), T, sddCommit, !exists); } catch (e) { fail(`${src}: ${e.message}`); }
 fs.writeFileSync(mapFile, html);
 let n = 0; (function c(x) { n++; (x.children || []).forEach(c); })(T);
-console.log(`map written: ${mapFile}; ${n} boxes${sddCommit ? "; sddCommit " + sddCommit.slice(0, 12) : ""}`);
+console.log(`map written: ${mapFile}; ${n} boxes${sddCommit ? "; sddCommit " + sddCommit.slice(0, 12) : "; the SDD is not tracked by git: no sddCommit"}`);
