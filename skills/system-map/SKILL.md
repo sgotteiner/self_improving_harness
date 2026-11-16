@@ -36,21 +36,21 @@ Unknown → a red `note`, never a guess. Code defaults are labelled as defaults.
 
 **Generate, don't retype:** when the substance sits in a data/config file (a rulebook, a list, a prompt), build that branch with a small script saved next to the map (`map-src/`), so it can be refreshed.
 
-## The map follows the SDD
-The SDD is the current state of the system; the map is drawn from it. (His design: "compare the diff in the sdd from last time a map was generated and use that to change only the right part of the map".)
-- When building, record on the root of `T`: `sdd` (the SDD file paths) and `sddCommit` (the git commit of the SDD the map was drawn from).
-- Give each box an `sdd` field naming the SDD section (its heading) it describes; boxes drawn only from code keep their `file` field.
+## Two modes — pick by the project
+- **Mode A, his projects (an SDD in the SDD format, `skills/sdd/SKILL.md`):** the map is generated from the SDD — see "Mode A" below. Never hand-edit it.
+- **Mode B, any other repo (no SDD in his format — someone else's repo, a library, a codebase he's studying):** the map is built by hand from the code and its docs with the rules above (levels, content rule, generators in `map-src/`), saved in that repo's `docs/` (or where he says), and updated by hand — see "Mode B" below. This is how the StockerTV pipeline map was made.
 
-### When the SDD is in the SDD format (`skills/sdd/SKILL.md`): generate, don't hand-edit
-The map is generated from the SDD: `node skills/sdd/scripts/sdd-to-map.js <sdd.md> <map.html>` after each SDD commit, or when he asks. It replaces only `T` (one box per section, same nesting; name, desc = feature, facts, file, talks, order, red notes, `sdd` + `sddCommit` on the root) and keeps the map's rendering code. Never edit a generated map's boxes by hand: change the SDD section and regenerate. Then run the checks below. The procedure in the next section is only for maps without an SDD in this format (for example a map drawn from code, like a pipeline map).
+## Mode A: generated from the SDD
+The SDD is the current state of the system; the map only draws it. `node skills/sdd/scripts/sdd-to-map.js <sdd.md> <map.html>` replaces only `T` (one box per section, same nesting; name, desc = feature, facts, file, talks, order, red notes; `sdd` + `sddCommit` on the root) and keeps the rendering code. With the SDD git hooks installed (`skills/sdd/scripts/install-hooks.js`), every SDD commit regenerates the map by itself. Never edit a generated map's boxes: change the SDD section and commit. Then the checks below.
 
-## Updating an existing map without such an SDD (never rebuild it)
-When the system changed, update the SDD first (knowledge-manager), then only the map boxes the change touched:
+## Mode B: built from the code, updated by hand (never rebuilt)
+When building, record on the root of `T`: `src` (the repo path(s) it was drawn from) and `srcCommit` (each repo's commit at that moment; a folder of several repos → one commit per repo). Each box keeps its `file`.
+To update after the code changed — only the boxes the change touched:
 0. Copy the map aside first (the "before" for step 5).
-1. List what changed: `git diff <sddCommit> -- <sdd files>` gives the changed SDD sections; the change itself or git gives changed code files.
-2. Find the boxes it touches: every box whose `sdd` names a changed section, every box whose `file` names a changed code file, plus boxes whose text mentions the changed part — grep the `T` data for its names and any count or number the change moves (e.g. "27 folders" when a folder is added). A map without `sddCommit` yet: use the grep only, and record `sddCommit` at the end.
+1. List what changed: `git diff --name-only <srcCommit>` in each repo (or the change itself).
+2. Find the boxes it touches: every box whose `file` names a changed file, plus boxes whose text mentions the changed part — grep the `T` data for its names and any count or number the change moves (e.g. "27 folders" when a folder is added). A map without `srcCommit` yet: grep only, and record it at the end.
 3. Re-read only those sources; edit only those boxes (add a box for a new part, under the stage it belongs to; remove one for a removed part). Re-count every count the change moves. Keep every other box and every id byte-identical.
-4. Re-run any generator in `map-src/` whose source changed. Set `sddCommit` to the SDD's current commit.
+4. Re-run any generator in `map-src/` whose source changed. Set `srcCommit` to each repo's current commit.
 5. Report the diff with `node scripts/diff-maps.js <before> <after>`: identical / changed / added / removed, plus one line per changed box. If more than a third of the boxes changed, stop and ask him before going on.
 
 ## Checks before handing it over
