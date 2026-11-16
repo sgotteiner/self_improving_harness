@@ -51,3 +51,9 @@ node_modules/
 /scripts/recall/history.db
 /scripts/recall/denylist.local.txt
 /scripts/recall/results/hook.log
+# local measurement: every gate verdict, and the replay answers he is asked to mark
+/scripts/recall/results/gate_verdicts.jsonl
+/scripts/recall/results/*-judge-sheet.md
+/scripts/recall/results/*.stamp
+# drafts the main session discarded as false captures: kept so his words are recoverable, never pushed
+_discarded/

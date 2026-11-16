@@ -16,6 +16,7 @@ MARKERS = re.compile(r"choices beyond the spec|decisions i made|choices and gaps
 RETURNING = ("Agent", "Task", "SendMessage")  # tools whose result is an agent's return
 HEADING = "## Claude-on-its-own ({date})"
 BEFORE = r"^## Known debt"  # a new dated section goes above the debt list
+MAX_ITEMS, MAX_ITEM_LEN = 8, 300  # per agent return, and characters of one item: a runaway reply cannot flood his flags file
 MAX_RETURNS = 10  # agent returns read (one brain call each) per message; the rest wait for the next message
 VAULT = os.path.dirname(os.path.dirname(os.path.dirname(diary.FLAGS_SETUP)))  # the private vault: Vault/Projects/<project>/<file>
 STATE = os.path.join(tempfile.gettempdir(), "recall-flags")  # per session: hashes of the returns already read
@@ -48,7 +49,8 @@ def items_of(reply, messages):
     out = []
     for l in reply.splitlines():
         what, _, asked = [x.strip(" -*`") for x in l.partition("|")]
-        if what and what.upper() != "NONE":
+        if what and what.upper() != "NONE" and len(out) < MAX_ITEMS:
+            what = what[:MAX_ITEM_LEN]
             span = grounding.best_span(asked, messages)
             out.append(f"**{what}** — owner asked: " + (f'"{span}"' if span else "(not stated)"))
     return out
@@ -97,10 +99,10 @@ def process(tp, ask=None):
             done.add(h)
         except Exception as e:  # one failing return must not lose the others
             ctx.log(f"flags: a return was skipped: {e!r}")
-    os.makedirs(STATE, exist_ok=True)
-    json.dump(sorted(done), open(_state(tp), "w", encoding="utf-8"))
     if new:
         text = mdfile.read(path)  # read again right before the write: the file may have changed during the brain calls
         head = HEADING.format(date=datetime.date.today())
         mdfile.write_atomic(path, mdfile.insert_under(text, head, "\n".join(new), new_before=BEFORE))
+    os.makedirs(STATE, exist_ok=True)  # only after the write: a failed write leaves the returns unread, the next message retries
+    json.dump(sorted(done), open(_state(tp), "w", encoding="utf-8"))
     return new

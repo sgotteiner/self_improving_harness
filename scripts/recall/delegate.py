@@ -7,14 +7,15 @@ tasks/delegation-draft.md (fenced blocks and bullet lists), so editing either ch
 into the code. Both steps return (result, tokens) and raise on failure; the callers (hook.py, gate.py) fail open."""
 import os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx, turnfacts
+import ctx, turnfacts, verdicts
+import delegvet
+from delegvet import veto
 
 CLAUDE_MD = os.path.join(ctx.ROOT, "CLAUDE.md")
 DRAFT = os.path.join(ctx.ROOT, "tasks", "delegation-draft.md")
 SLOT = "delegation-hook"
-INPUT_KINDS = ("KNOWLEDGE-MANAGER", "TEST", "IMPLEMENTER")
-BLOCK_KINDS = ("TESTER", "REVIEWER", "KNOWLEDGE-MANAGER", "LOOP", "SETUP-MANAGER")
-AGENT_OF = {"TESTER": "tester", "REVIEWER": "reviewer", "KNOWLEDGE-MANAGER": "knowledge-manager"}  # kind -> agent that answers it
+INPUT_KINDS = ("KNOWLEDGE-MANAGER", "TEST", "IMPLEMENTER", "SDD-ASK")
+BLOCK_KINDS = ("TESTER", "TESTER-HERE", "REVIEWER", "KNOWLEDGE-MANAGER", "LOOP", "SETUP-MANAGER")
 
 
 def rules():
@@ -65,25 +66,20 @@ def input_step(prompt, transcript):
               prompt=prompt)
     out, tok = brain.ask(p, tag="delegate-in")
     lines = _lines("Instruction lines attached")
+    prev = ctx.last_turn(transcript, prompt.strip())[0] if transcript else ""
     res = []
     for l in out.splitlines()[:2]:
         kind, _, why = [x.strip(" -*`") for x in l.partition("|")]
-        if kind in lines:
+        if kind == "IMPLEMENTER" and "Add it?" in prev and "Diary" in prev:
+            ctx.log("delegate: IMPLEMENTER dropped, his message answers a diary question")
+        elif kind == "SDD-ASK" and "SDD: update the SDD for" in prev:
+            ctx.log("delegate: SDD-ASK dropped, the question was already asked")
+        elif kind == "SDD-ASK" and kind in lines:
+            feat, _, changed = [x.strip() for x in why.partition("|")]
+            res.append(lines[kind].replace("{question}", f"SDD: update the SDD for {feat}? (it changed: {changed or 'see above'})"))
+        elif kind in lines:
             res.append(lines[kind] + (f" Context: {why}" if why else ""))
     return res, tok
-
-
-def veto(kind, reason, t):
-    """Why the brain's BLOCK must not stand (a fact from the transcript or its own hedge says so), else None."""
-    if AGENT_OF.get(kind) in t["called"]:
-        return f"the {AGENT_OF[kind]} was called or resumed this turn"
-    if kind == "SETUP-MANAGER" and t["sm_ok"]:
-        return "the setup-manager was called after the setup edit, or nothing in the setup was edited"
-    if ctx.hedged(reason):
-        return "its own reason hedges"
-    if kind in AGENT_OF and t["pending"] and not t["claims"]:  # a change still being made cannot be tested or reviewed yet
-        return f"a background agent ({', '.join(t['pending'])}) is still running and the final message does not claim it is done"
-    return None
 
 
 def output_step(transcript, root=ctx.ROOT):
@@ -92,8 +88,13 @@ def output_step(transcript, root=ctx.ROOT):
     t = turnfacts.turn(transcript, root)
     if not t["text"].strip() and not t["tools"]:
         return None, 0
+    if t["suite_unexcused"]:  # counted from the Bash calls, not asked of the brain: a tester call must come AFTER the run
+        ctx.log("delegate: BLOCK TESTER-HERE: the main session ran a test suite itself")
+        verdicts.log(transcript, "delegation", "BLOCK", "TESTER-HERE", features=delegvet.features(t))
+        return ("TESTER-HERE", _lines("Block reasons")["TESTER-HERE"]), 0
     if not (t["edited"] or t["called"] or t["returned"] or t["claims"]):
         ctx.log("delegate: output call skipped: nothing edited, no agent called, nothing claimed")
+        verdicts.log(transcript, "delegation", "OK", skip="nothing edited, called or claimed")
         return None, 0
     p = _fill(_prompt("Output step"), rules=rules(), human=t["human"], tools="\n".join(t["tools"]) or "(none)",
               text=t["text"], facts=t["facts"], max_rounds=str(turnfacts.ROUNDS_MAX))
@@ -101,12 +102,15 @@ def output_step(transcript, root=ctx.ROOT):
     m = re.match(r"\s*BLOCK\s+([A-Z-]+)\s*\|?\s*(.*)", out, re.S)
     lead = _lines("Block reasons")
     if not (m and m.group(1) in lead):
+        verdicts.log(transcript, "delegation", "OK", tokens=tok)
         return None, tok
     kind, reason = m.group(1), (m.group(2).strip().splitlines() or [""])[0]
     why = veto(kind, reason, t)
     if why:
         ctx.log(f"delegate: BLOCK {kind} dropped: {why} | {reason}")
+        verdicts.log(transcript, "delegation", "BLOCK", kind, ctx.hedged(reason), dropped=why, tokens=tok, features=delegvet.features(t))
         return None, tok
+    verdicts.log(transcript, "delegation", "BLOCK", kind, ctx.hedged(reason), tokens=tok, features=delegvet.features(t))
     return (kind, f"{lead[kind]} {reason}".strip()), tok
 
 

@@ -34,5 +34,17 @@
   "delegation-hook": {
     "enabled": true,
     "about": "hooks tell the main session what to delegate (knowledge-manager, test, implementer) and the output gate blocks a reply that skipped it; wording in tasks/delegation-draft.md, approved by the owner 2026-11-15"
+  },
+  "map-follows-sdd": {
+    "enabled": true,
+    "about": "a git post-commit hook in the SDD's repo (skills/sdd/scripts/sdd-hook.js, installed by install-hooks.js): a commit that changed an SDD redraws its map from that commit (sdd-to-map.js --commit) and commits it as its own commit; an SDD that fails the validator is never drawn"
+  },
+  "sdd-commit-check": {
+    "enabled": true,
+    "about": "a git pre-commit hook in the SDD's repo: a commit with an SDD that fails the validator is refused (a deliberate removal: SDD_REMOVED=id,id)"
+  },
+  "project-check": {
+    "enabled": true,
+    "about": "on the first message of a session, the project's five documents, its SDD format, its map's sddCommit and '(inferred)' in the diary are checked (projcheck.py); what is missing or stale is told to the owner once; nothing is fixed"
   }
 }

@@ -98,6 +98,19 @@ class Verdicts(unittest.TestCase):
         self.assertEqual(step(returned, "BLOCK TESTER | call the tester")[0][0], "TESTER")  # it returned: the rule applies again
         self.assertEqual(turnfacts.turn(h.transcript(started), ROOT)["pending"], ["implementer"])
 
+    def test_background_agent_without_a_launch_result_is_still_running(self):
+        """The misfire of 2026-11-16: the gate asked for the reviewer while the implementer was still building."""
+        call = h.tool("Agent", {"subagent_type": "implementer", "description": "hooks", "prompt": "p", "run_in_background": True}, "t7")
+        say = "The implementer is still building the hook changes (it has the files ready to go). Then the reviewer, then the commit."
+        for res in ([], [h.result("t7", "Agent started in background")]):  # no result yet / a result without the usual launch text
+            es = [h.user("build it"), h.assistant(call), *res, h.assistant(say)]
+            self.assertEqual(turnfacts.turn(h.transcript(es), ROOT)["pending"], ["implementer"])
+            self.assertFalse(turnfacts.turn(h.transcript(es), ROOT)["claims"])
+            for kind in ("REVIEWER", "TESTER", "KNOWLEDGE-MANAGER"):
+                self.assertIsNone(step(es, f"BLOCK {kind} | The implementer is still building the hook changes")[0], kind)
+        done = [h.user("build it"), h.assistant(call), h.notice("ag9", "t7"), h.assistant("The implementer finished; the code changed.")]
+        self.assertEqual(turnfacts.turn(h.transcript(done), ROOT)["pending"], [])  # its notification names the tool-use id
+
     def test_the_round_limit_is_a_constant_in_the_prompt(self):
         _, ask = step([h.user("x"), EDIT()], "OK")
         self.assertIn(f"at most {turnfacts.ROUNDS_MAX} rounds", ask.prompts[0])

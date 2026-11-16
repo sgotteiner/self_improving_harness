@@ -56,6 +56,13 @@ class Process(Env):
         with mock.patch.object(diary, "DIARY_SETUP", os.path.join(root, "none.md")):
             self.assertEqual(casesave.inferred_in(root), [os.path.join(root, "dirty", "docs", "D.md")])
 
+    def test_a_diary_entry_that_only_quotes_the_word_is_not_an_inferred_why(self):
+        import mdfile
+        quoted = ("### Not stated\n**Idea:** the diary records '(not stated)' instead of '(inferred)', and an inferred reason "
+                  "goes to the flags file\n**Why:** (not stated)\n")
+        self.assertFalse(mdfile.inferred_why(quoted))
+        self.assertTrue(mdfile.inferred_why(quoted + "### B\n**Idea:** x\n**Why:** (inferred) guessed\n"))
+
     def test_first_message_is_still_detected_with_one_call(self):
         (path, _), calls = self.run_process(["NO"], "from now on every table has an owner", [])
         self.assertEqual(calls, ["decision-detect"])

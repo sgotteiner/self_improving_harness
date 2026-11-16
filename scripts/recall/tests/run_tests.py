@@ -1,7 +1,8 @@
 """All tests of the recall hooks (delegation, decision capture, flags capture, the shared helpers).
 Run: python -I scripts/recall/tests/run_tests.py [module-name ...]   (exit 1 if any fails; no real brain call is made)"""
-import os, sys, unittest
+import os, sys, tempfile, unittest
 
+os.environ["RECALL_VERDICT_LOG"] = os.path.join(tempfile.mkdtemp(), "gate_verdicts.jsonl")  # the tests never write the real verdict log
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, ".."))

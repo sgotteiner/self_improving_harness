@@ -14,13 +14,17 @@ import brain, ctx, diary, grounding, pending, setupstate
 NOT_STATED = "(not stated)"
 
 DETECT = ("The assistant's previous turn:\n{prev}\n\nThe owner's new message: {prompt}\n\n"
+          "First: if the assistant's previous turn asked whether to add something to the diary or the idea ('Add it?'), his "
+          "message ANSWERS that question (yes, keep, discard, drop, add it): reply 'NO'. "
           "Does his message state a DESIGN decision or approve one: a rule for how something should work or be built, a "
           "choice between options (also a bare 'a.' / 'option 2' picking one of the assistant's options), or a 'yes' / 'ok' / "
           "'do it' to a design the assistant just proposed? A message that ALSO asks a question is still YES when another "
           "part of it states or picks a decision. NOT a decision: a bug report or 'it doesn't work', only a question, a "
           "correction of the assistant's behavior or mistake ('I told you', 'that's wrong', 'you missed'), an instruction "
           "for one task ('make the button blue', 'rename it', 'fix that'), a yes to a code fix or a plain action (run it, "
-          "commit it), approval of a finished result, thanks. Reply 'NO' or 'YES | <one sentence: the decision>'.")
+          "commit it), approval of a finished result, thanks, an answer about a diary or idea draft ('discard', 'keep it in "
+          "the idea', 'drop it', 'add it'), an idea to park or try later ('maybe later we could...': ideas go to the ideas "
+          "file, not the diary), a one-time choice that only settles this task ('use the first one for now'). Reply 'NO' or 'YES | <one sentence: the decision>'.")
 DRAFT = ("Draft a design-diary entry for this decision of the owner. Decision: {why}\nThe assistant's previous turn "
          "(context only):\n{prev}\nThe owner's words: {prompt}\n\nReply with JSON only: {{\"title\": \"short title of the "
          "decision\", \"idea\": \"what he decided, 1-2 sentences, in design terms (include the design the assistant "
@@ -42,7 +46,7 @@ def process(prompt, tp):
     Detection also runs when the previous turn is empty (his first message may state a rule): mistake capture skips that
     case (nothing to correct), so there is still one detection call, not two."""
     prev, tools = ctx.last_turn(tp, prompt.strip())
-    if "Add it?" in prev and "Diary:" in prev:  # his message answers a diary question; it is not a decision
+    if "Add it?" in prev and "Diary" in prev:  # his message answers a diary question; it is not a decision
         return None, 0
     out, tok = brain.ask(DETECT.format(prev=prev or "(none)", prompt=prompt), tag="decision-detect")
     if not out.upper().startswith("YES"):
@@ -84,15 +88,25 @@ def process(prompt, tp):
 
 
 def _note(slug, d):
-    return (f"Diary: {d.get('title', '')} - '{d.get('his_words', '')}'. Add it? Ask the owner exactly this one line (the "
+    where = os.path.basename(d.get("target") or "") or "no diary found, ask him which"
+    return (f"Diary ({where}): {d.get('title', '')} - '{d.get('his_words', '')}'. Add it? Ask the owner exactly this one line (the "
             f"rule: append to the diary only after his yes). If he says yes run `python -I scripts/recall/decisions.py "
-            f"approve {slug}`; if no, `python -I scripts/recall/decisions.py discard {slug}`; no answer: leave it.")
+            f"approve {slug}` (to fix the draft first: add --title \"...\" and/or --idea \"...\"); if no, `python -I "
+            f"scripts/recall/decisions.py discard {slug}`; no answer: leave it.")
 
 
-def ask_notes():
-    """[(path, note)] for each draft not yet asked about; hook.py prints them and then calls pending.mark_asked(path)."""
-    return pending.ask_notes(diary.PENDING, _note)
+def ask_notes(unasked_only=True):
+    """[(path, question)] for the diary drafts; `drafts.py show` lists them all when he asks to review the drafts."""
+    return pending.ask_notes(diary.PENDING, _note, unasked_only)
+
+
+def _cli(argv):
+    """approve <slug> [--title T] [--idea I] | discard <slug>: the title and idea of the draft can be corrected on approval."""
+    opts = {k: argv[argv.index("--" + k) + 1] for k in ("title", "idea") if "--" + k in argv[2:] and argv.index("--" + k) + 1 < len(argv)}
+    if argv[1] == "discard":
+        return diary.discard(argv[2])
+    return diary.approve(argv[2], edits=opts)
 
 
 if __name__ == "__main__" and len(sys.argv) >= 3 and sys.argv[1] in ("approve", "discard"):
-    sys.exit(diary.approve(*sys.argv[2:4]) if sys.argv[1] == "approve" else diary.discard(sys.argv[2]))
+    sys.exit(_cli(sys.argv))

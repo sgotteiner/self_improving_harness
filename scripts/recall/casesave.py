@@ -15,7 +15,7 @@ def inferred_in(projects=None):
     projects = projects or PROJECTS
     dirs = [os.path.join(projects, f) for f in sorted(os.listdir(projects)) if os.path.isdir(os.path.join(projects, f))]
     paths = {diary.DIARY_SETUP if os.path.exists(diary.DIARY_SETUP) else "", *(diary.diary_for(d) for d in dirs)} - {""}
-    return sorted(p for p in paths if INFERRED in mdfile.read(p))
+    return sorted(p for p in paths if mdfile.inferred_why(mdfile.read(p)))
 
 
 def move(slug, level="advice"):

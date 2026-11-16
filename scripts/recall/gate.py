@@ -4,8 +4,19 @@ stop_hook_active (never blocks twice in a row). The delegation check (delegate.p
 import json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx  # stdlib only; brain/capture/retrieve import numpy and fastembed, so they load inside main()
-STOP_LIMIT = 180  # the Stop timeout in settings.json; no new brain call starts after STOP_LIMIT - brain.TIMEOUT seconds
+import ctx, verdicts  # stdlib only; brain/capture/retrieve import numpy and fastembed, so they load inside main()
+
+
+def stop_limit():
+    """The gate's own timeout from settings.json (one source, no copy); 180 if it cannot be read."""
+    try:
+        s = json.load(open(os.path.join(ctx.ROOT, "settings.json"), encoding="utf-8"))
+        return next(h["timeout"] for g in s["hooks"]["Stop"] for h in g["hooks"] if "gate.py" in h["command"])
+    except (OSError, ValueError, KeyError, StopIteration):
+        return 180
+
+
+STOP_LIMIT = stop_limit()  # no new brain call starts after STOP_LIMIT - brain.TIMEOUT seconds
 
 PROMPT = ("Cases (lessons from earlier mistakes of this assistant):\n{cases}\n\nThe assistant's latest turn.\n"
           "Tool calls this turn:\n{tools}\n\nFinal message:\n{text}\n\nDoes this turn CLEARLY violate one of the cases "
@@ -19,19 +30,23 @@ def check(tp):
     text, tools = ctx.last_turn(tp)
     if not text.strip():
         ctx.log("gate: no assistant text in the last turn")
+        verdicts.log(tp, "lesson", "OK", skip="no assistant text")
         return None
     hits = [(s, c) for s, c in retrieve.search(ctx.chunks(text) + ctx.chunks("\n".join(tools)), 6, "emb")
             if s >= ctx.RELEVANCE_MIN]
     if not hits:
         ctx.log("gate: no case above the relevance cutoff")
+        verdicts.log(tp, "lesson", "OK", skip="no case above the cutoff")
         return None
     metas = {c: index.meta(c) for _, c in hits}
     block = "\n".join(f"- {c}: situation: {m[1]} Lesson: {m[2]} Right: {m[3]}" for c, m in metas.items())
-    out, _ = brain.ask(PROMPT.format(cases=block, tools="\n".join(tools) or "(none)", text=text), tag="gate")
+    out, tok = brain.ask(PROMPT.format(cases=block, tools="\n".join(tools) or "(none)", text=text), tag="gate")
     if out.startswith("VIOLATION"):
         cid, _, why = [x.strip(" *`") for x in out[len("VIOLATION"):].partition("|")]
         if cid in metas:
+            verdicts.log(tp, "lesson", "BLOCK", cid, ctx.hedged(why), tokens=tok)
             return cid, why
+    verdicts.log(tp, "lesson", "OK", tokens=tok)
     return None
 
 
@@ -54,6 +69,11 @@ def main():
     import brain
     ctx.BUDGET = STOP_LIMIT - brain.TIMEOUT
     d = json.load(sys.stdin)
+    try:  # first, also on the reply that follows a block: that reply is where he or the session calls the block a false alarm
+        import gatecases
+        gatecases.label(d.get("transcript_path", ""))
+    except Exception as e:
+        ctx.log(f"gate: labelling failed: {e!r}")
     if d.get("stop_hook_active"):
         return
     tp = d.get("transcript_path", "")
@@ -74,6 +94,7 @@ def main():
     dr = delegation(tp)
     if dr:
         reasons.append(dr)
+    verdicts.log(tp, "gate", "SENT" if reasons else "PASS", rule=str(len(reasons)))
     if reasons:
         print(json.dumps({"decision": "block", "reason": "\n".join(reasons)}))
 

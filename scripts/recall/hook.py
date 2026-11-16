@@ -55,17 +55,19 @@ def main():
     if ctx.enabled("delegation-hook"):  # first: the setup as it is at his message, before any slow stage; off until approved
         stage("delegation-snapshot", lambda: __import__("setupstate").save_snapshot(tp), None)
     cap = ctx.enabled("capture")
-    notes = stage("ask-notes", lambda: __import__("capture").ask_notes(), []) if cap else []
     drafted = None
-    if cap:  # drafted now, asked at the next prompt
+    if cap:  # drafted now and collected silently: no question per message (drafts.py says once a day what is waiting)
         drafted = stage("capture", lambda: __import__("capture").process(prompt, tp), None)
-    if ctx.enabled("decision-capture"):  # diary drafts: asked once at the next prompt, like captured mistakes
-        notes += stage("diary-notes", lambda: __import__("decisions").ask_notes(), [])
+    if ctx.enabled("decision-capture"):  # diary drafts: collected silently, like captured mistakes
         if drafted:  # the same message was a correction of his assistant, not a design decision
             ctx.log("hook: decision detection skipped, mistake capture made a draft from this message")
         else:
             stage("decisions", lambda: __import__("decisions").process(prompt, tp), None)
-    out = stage("vision", lambda: __import__("vision").lines(), []) + [n for _, n in notes]  # VISION.md first, like a rule, on every human message
+    out = stage("vision", lambda: __import__("vision").lines(), [])  # VISION.md first, like a rule, on every human message
+    if cap or ctx.enabled("decision-capture"):  # at most one line a day, on the first message: how many drafts wait
+        out += stage("drafts", lambda: __import__("drafts").daily_line(), [])
+    if ctx.enabled("project-check"):  # first message of a session: the project's documents against the setup's rules
+        out += stage("project-check", lambda: __import__("projcheck").first_message(tp, d.get("cwd", "")), [])
     if ctx.enabled("delegation-hook"):  # off until the owner approves tasks/delegation-draft.md
         out += stage("delegation", lambda: __import__("delegate").input_step(prompt, tp)[0], [])
     if ctx.enabled("recall-hook") and len(prompt.split()) >= 3:
@@ -74,16 +76,13 @@ def main():
         ctx.log("hook: silent, recall off or prompt under 3 words")
     if ctx.enabled("flags-capture"):  # agents' own choices -> the project's flags file; last, it is the least urgent
         stage("flags", lambda: __import__("flags").process(tp), [])
-    text, shown = "", 0
+    text = ""
     for line in out:
         if len(text) + len(line) + 1 > OUT_MAX:
             break
         text += line + "\n"
-        shown += 1
     if text:
         print(text.rstrip("\n"), flush=True)
-    for p, _ in notes[:shown]:  # marked asked only after the note was printed
-        stage("mark-asked", lambda: __import__("pending").mark_asked(p), None)
 
 
 if __name__ == "__main__":

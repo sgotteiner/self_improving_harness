@@ -68,7 +68,7 @@ def process(prompt, tp):
     open(path, "w", encoding="utf-8").write(body)
     history.record(path, "correction", prompt.strip(), tp)  # his words go to history.db; the count becomes 1
     try:
-        _todo(slug)
+        pending.todo_add(f"- [ ] review captured case `{slug}` (cases/_pending/{slug}.md): add, edit or discard")
     except OSError as e:
         ctx.log(f"capture: todo not updated: {e!r}")
     return path
@@ -90,10 +90,9 @@ def _note(f, d):
             "to cases/, keeps his words only in history.db), or edit it, or delete the file.")
 
 
-def ask_notes():
-    """[(path, note)] for each pending case not yet asked about. Injected by the next UserPromptSubmit, which calls
-    pending.mark_asked(path) only after the note was printed."""
-    return pending.ask_notes(PENDING, _note)
+def ask_notes(unasked_only=True):
+    """[(path, question)] for the pending cases; `drafts.py show` lists them all when he asks to review the drafts."""
+    return pending.ask_notes(PENDING, _note, unasked_only)
 
 
 if __name__ == "__main__" and len(sys.argv) >= 2:

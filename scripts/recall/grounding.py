@@ -4,6 +4,10 @@ import re
 
 MIN_SPAN_WORDS = 4  # a text counts as grounded when it repeats this many consecutive words of his message
 MIN_MESSAGE_WORDS = 3  # a shorter message ("yes", "ok do it") states no reason of its own and grounds nothing
+MIN_CONTENT_WORDS = 2  # a span of filler ("it to work and that") is not his reason: it needs this many words that are not these
+FILLER = set("a an the and or but so to of in on at for with from by as is are was were be been it its this that these those "
+             "i you he she we they me my your his her our their do does did have has had not no yes can could would should will "
+             "just also then than if when what which who how".split())
 
 
 def common_span(text, message):
@@ -22,7 +26,11 @@ def common_span(text, message):
                 if row[j + 1] > best:
                     best, end = row[j + 1], i
         prev = row
-    return message[mine[end - best + 1][1]:mine[end][2]] if best >= MIN_SPAN_WORDS else ""
+    if best < MIN_SPAN_WORDS:
+        return ""
+    span = message[mine[end - best + 1][1]:mine[end][2]]
+    content = [w for w in re.findall(r"\w+", span.lower()) if w not in FILLER]
+    return span if len(content) >= MIN_CONTENT_WORDS else ""
 
 
 def best_span(text, messages):

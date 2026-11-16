@@ -39,14 +39,14 @@ def todo_remove(marker):
         open(TODO, "w", encoding="utf-8").write("\n".join(lines))
 
 
-def ask_notes(folder, render):
-    """[(path, note)] for each draft in `folder` not yet asked about; render(slug, parsed frontmatter) -> the note.
-    hook.py prints the notes and only then calls mark_asked(path)."""
+def ask_notes(folder, render, unasked_only=True):
+    """[(path, note)] for each draft in `folder` (not yet asked about, or all of them); render(slug, parsed frontmatter) -> the
+    question. drafts.py shows them when he asks to review the drafts."""
     out = []
     for f in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
         p = os.path.join(folder, f)
         d = index.parse(p) if f.endswith(".md") else {}
-        if d.get("asked") == "false":
+        if d.get("asked") == "false" or not unasked_only and d:
             out.append((p, render(f[:-3], d)))
     return out
 

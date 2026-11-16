@@ -117,12 +117,14 @@ def _draft(slug):
     return p, 0
 
 
-def approve(slug, target=None):
-    """Append the draft to the project's diary and delete the draft. Returns the exit code."""
+def approve(slug, target=None, edits=None):
+    """Append the draft to the project's diary and delete the draft. `edits` {title, idea} replace the draft's own (a draft
+    that mixed two things, or a title that is off, is corrected here instead of by hand afterwards). Returns the exit code."""
     p, code = _draft(slug)
     if not p:
         return code
     d = index.parse(p)
+    d.update({k: v for k, v in (edits or {}).items() if v.strip()})
     target = target or d.get("target")
     if not target or not os.path.exists(target):
         print(f"no diary found for this draft (project {d.get('project')!r}); pass the diary path as a second argument")

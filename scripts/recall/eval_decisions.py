@@ -1,6 +1,8 @@
-"""Repeatable eval of decision capture's detector (decisions.DETECT) on 18 real messages of the owner, labelled by hand and
+"""Repeatable eval of decision capture's detector (decisions.DETECT) on real messages of the owner, labelled by hand and
 cleaned (no company or project names: this repo is public). Run it after changing the DETECT prompt and compare:
-result 2026-11-15: before the DETECT change 8/9 caught, 0/9 false; after it 9/9 caught, 0/11 false (11 = 9 + the 2 constructed negatives).
+result 2026-11-15 (20 messages): before the DETECT change 8/9 caught, 0/9 false; after it 9/9 caught, 0/11 false (11 = 9 + the 2 constructed negatives).
+result 2026-11-16 (26 messages, 6 negatives added from the misfires; 3 runs): first DETECT 8-9/9 caught, 2/17 false ('keep it in the idea',
+'keep, and yes'); with the "First: ... ANSWERS that question" rule 8/9 caught in all 3 runs (one miss per run, not always the same), 0/17 false.
 Usage: python -I scripts/recall/eval_decisions.py   (calls the real cheap model once per message; exit 1 on a false draft)"""
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -29,6 +31,14 @@ SET = [
     # constructed (not real messages): the two exclusions added to DETECT on 2026-11-15
     ("Showed the settings card.", "make the button blue", False),
     ("Found a null check missing in the parser and proposed adding it.", "yes fix it", False),
+    # misfires of 2026-11-16: answers about a diary draft, an idea to park, a one-time choice (the first four are his words as
+    # quoted in tasks/todo.md; the park idea and the one-time choice are constructed)
+    ("Diary (DESIGN_DECISIONS_DIARY.md): Keep the map simple - 'the map is simple'. Add it?", "discard", False),
+    ("Diary (DESIGN_DECISIONS_DIARY.md): Map follows the SDD - 'regenerate it'. Add it?", "keep it in the idea", False),
+    ("Diary (DESIGN_DECISIONS_DIARY.md): Gate waits for review - 'wait for the review'. Add it?", "yes add it", False),
+    ("Diary (DESIGN_DECISIONS_DIARY.md): Capture skips discards - 'skip them'. Add it?", "keep, and yes", False),
+    ("Listed the gate fixes.", "maybe later we could add a second model that reviews the gate's verdicts", False),
+    ("Asked: which of the two files to open first?", "use the first one for now", False),
 ]
 
 tp = fp = fn = tn = tok = 0

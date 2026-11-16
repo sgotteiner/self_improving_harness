@@ -38,3 +38,8 @@ def insert_under(text, heading, block, new_before=None, rule=False):
     b = BOUNDARY.search(text, m.end())
     end = len(text[:b.start() if b else len(text)].rstrip())  # after the section's last non-blank text
     return text[:end] + nl + nl + block + (text[end:] or nl)
+
+
+def inferred_why(text):
+    """True when a **Why:** line of a diary holds '(inferred)' as a marker. The word quoted in an Idea or elsewhere does not count."""
+    return any("(inferred)" in l for l in text.splitlines() if l.lstrip().startswith("**Why:**"))
