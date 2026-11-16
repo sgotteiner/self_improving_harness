@@ -1,11 +1,21 @@
-"""One command for every test and measurement of the setup (the tester agent runs this and nothing else): prints one line per
-suite and a final PASSED or FAILED, with the failing lines only. Exit 0 = PASSED.
-Usage: python -I scripts/run_all_tests.py [--eval]
+"""One command for the tests of what changed (the tester agent runs this and nothing else): prints one line per chosen suite
+and a final PASSED or FAILED, with the failing lines only. Exit 0 = PASSED.
+Usage: python -I scripts/run_all_tests.py [--since <ref>] [--all] [--eval]
+  (default)       only the suites the files changed since the last commit (git diff HEAD + untracked) need; a CHOOSE line says
+                  why for each, and the recall unit tests run per test file (only the ones importing a changed module).
+                  Nothing relevant changed -> "nothing to test".
+  --since <ref>   the files changed since <ref> instead, e.g. HEAD~1 for the commit about to be pushed.
+  --all           every suite, regardless of changes: only when the owner asks for a full regression run.
+  --eval          also force the two paid evals even when their files are unchanged.
+Selection rules are in select_tests.py.
 Suites: the recall hooks' unit tests, the SDD tools' tests (node), the setup check (cases, sources, diaries), the gate eval
 (labelled false alarms and real blocks replayed through the gate's code, free). Two suites call the real cheap model and cost
 tokens, so each runs only when the files it measures changed since it last passed (or with --eval): the decision detector's
 eval, and the gate eval's real-brain step. An unchanged one prints "skipped (unchanged)"."""
 import os, re, subprocess, sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # -I drops the script's own folder
+import select_tests
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 RECALL = os.path.join(ROOT, "scripts", "recall")
@@ -48,9 +58,17 @@ def run(cmd, timeout):
     return p.returncode == 0, summary[:110], [l[:200] for l in lines if BAD.search(l)][:12] if p.returncode else []
 
 
-def main(force=False):
+def main(force=False, chosen=None):
+    """chosen: {suite name: (why, extra args)} from select_tests.select; None = every suite."""
     failed = []
+    if chosen is not None and not chosen:
+        print("nothing to test (no changed file maps to a suite)")
     for name, cmd, timeout, files in SUITES:
+        if chosen is not None:
+            if name not in chosen:
+                continue
+            print(f"CHOOSE  {name}: {chosen[name][0]}", flush=True)
+            cmd = cmd + chosen[name][1]
         if files and not force and not changed(name, files):
             print(f"SKIP  {name}: skipped (unchanged)", flush=True)
             continue
@@ -67,4 +85,6 @@ def main(force=False):
 
 
 if __name__ == "__main__":
-    sys.exit(main("--eval" in sys.argv))
+    a = sys.argv[1:]
+    since = a[a.index("--since") + 1] if "--since" in a and a.index("--since") + 1 < len(a) else None
+    sys.exit(main("--eval" in a, None if "--all" in a else select_tests.select(select_tests.changed_files(since))))
