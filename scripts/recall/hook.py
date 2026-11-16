@@ -65,7 +65,7 @@ def main():
             ctx.log("hook: decision detection skipped, mistake capture made a draft from this message")
         else:
             stage("decisions", lambda: __import__("decisions").process(prompt, tp), None)
-    out = [n for _, n in notes]
+    out = stage("vision", lambda: __import__("vision").lines(), []) + [n for _, n in notes]  # VISION.md first, like a rule, on every human message
     if ctx.enabled("delegation-hook"):  # off until the owner approves tasks/delegation-draft.md
         out += stage("delegation", lambda: __import__("delegate").input_step(prompt, tp)[0], [])
     if ctx.enabled("recall-hook") and len(prompt.split()) >= 3:

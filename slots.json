@@ -27,6 +27,10 @@
     "enabled": true,
     "about": "on his next message, agent returns that name their own choices (Choices beyond the spec, ...) are extracted by a cheap model and appended to the project's DIARY_FLAGS.md under a dated Claude-on-its-own section, no approval, deduped by embedding; the setup's file is in the private vault"
   },
+  "vision": {
+    "enabled": true,
+    "about": "VISION.md injected like a rule: printed first on every human message by hook.py, and added to every subagent's context by a SubagentStart hook (scripts/recall/vision.py)"
+  },
   "delegation-hook": {
     "enabled": true,
     "about": "hooks tell the main session what to delegate (knowledge-manager, test, implementer) and the output gate blocks a reply that skipped it; wording in tasks/delegation-draft.md, approved by the owner 2026-11-15"

@@ -69,6 +69,17 @@
         ]
       }
     ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I C:/my_projects/.claude-config/scripts/recall/vision.py subagent",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
