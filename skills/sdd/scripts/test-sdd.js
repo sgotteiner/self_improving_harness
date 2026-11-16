@@ -7,4 +7,5 @@ require("./test-validate");
 require("./test-generate");
 require("./test-page");
 require("./test-order");
+require("./test-hooks");
 require("./test-helpers").summary();
