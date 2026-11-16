@@ -46,5 +46,9 @@
   "project-check": {
     "enabled": true,
     "about": "on the first message of a session, the project's five documents, its SDD format, its map's sddCommit and '(inferred)' in the diary are checked (projcheck.py); what is missing or stale is told to the owner once; nothing is fixed"
+  },
+  "short-returns": {
+    "enabled": true,
+    "about": "a SubagentStop hook (scripts/recall/shortreturn.py) blocks once an agent final message over 25 lines and asks for a short summary (done, errors, notes, own choices in one line); never twice, fails open; the long record is kept by the SDD/diary/flags hooks"
   }
 }

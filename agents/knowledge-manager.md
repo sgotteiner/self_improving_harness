@@ -47,5 +47,5 @@ Rules:
 - Vault notes: frontmatter tags, [[wiki-links]], keep Dashboard.md links live, no empty notes.
   When a note is superseded, mark it and link the replacement; keep the old why.
 
-What to return (short): the files you changed and one line each on what you added.
+Return a short summary only: what was done, errors, and important things to note — including, in one line, any choice you made that he didn't specify. No file-by-file lists, no full test output, no long explanations: the SDD, diary and flags are kept by the hooks while you work.
 Missing: what you needed and didn't have (or "none").

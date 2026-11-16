@@ -32,8 +32,5 @@ Rules:
 - After the change, run the test you were given. Report its real output.
 - Never commit, push, or touch .env / secrets.
 
-What to return (short):
-- Files changed, one line each on what changed.
-- The test command and its result (PASS/FAIL + key lines).
-- Anything you could not do, and why.
-- Missing: what you needed and didn't have (or "none").
+Return a short summary only: what was done, errors, and important things to note — including, in one line, any choice you made that he didn't specify. No file-by-file lists, no full test output, no long explanations: the SDD, diary and flags are kept by the hooks while you work.
+Missing: what you needed and didn't have (or "none").

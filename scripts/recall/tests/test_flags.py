@@ -47,6 +47,12 @@ class Flags(unittest.TestCase):
         self.assertEqual(t[t.index(head):t.index("## Known debt")].count("\n- "), 3)
         self.assertTrue(t.startswith(FLAGS.split("## Known debt")[0].rstrip()))
 
+    def test_a_one_line_choices_in_a_short_return_is_found(self):
+        short = "Done: added the lock. Errors: none.\nChoices: used a lockfile\nMissing: none."
+        a, ask = self.ask("a lockfile to stop two writers | writes to never collide with each other")
+        self.assertEqual(len(flags.process(self.session(short), ask)), 1)
+        self.assertFalse(flags.MARKERS.search("Done. Errors: none. Missing: none."))
+
     def test_what_he_asked_is_his_words_or_not_stated(self):
         flags.process(self.session(REPORT), self.ask(REPLY)[1])
         t = self.text()

@@ -36,5 +36,5 @@ Rules:
 - Probe the input first (ffprobe) and report duration, resolution and codecs if they matter.
 - After producing a file, verify it (ffprobe: it opens, duration is right).
 
-What to return: the output file paths, what was done to each, and the verification result.
+Return a short summary only: what was done, errors, and important things to note — including, in one line, any choice you made that he didn't specify. No file-by-file lists, no full test output, no long explanations: the SDD, diary and flags are kept by the hooks while you work.
 Missing: what you needed and didn't have (or "none").

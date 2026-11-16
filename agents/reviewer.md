@@ -45,8 +45,5 @@ Results review — given output and the project goal:
 - Follow the evidence: logs, code, data. Name the root cause only when you can show it.
 - If you can't tell, say what tool or data would make it visible.
 
-What to return:
-- Findings ranked most severe first. Each: file:line, what is wrong, the evidence (verbatim
-  lines), and how to reproduce. Mark each CONFIRMED or SUSPECTED.
-- No fix code. A one-line direction for a fix is fine.
-- Missing: what you needed and didn't have (or "none").
+Return a short summary only: what was done, errors, and important things to note — including, in one line, any choice you made that he didn't specify. No file-by-file lists, no full test output, no long explanations: the SDD, diary and flags are kept by the hooks while you work.
+Missing: what you needed and didn't have (or "none").

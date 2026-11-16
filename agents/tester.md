@@ -26,9 +26,5 @@ How to run:
 - Run only what you were asked to run. No full suite unless asked.
 - Web pages: drive a real browser with `playwright-cli` (open, snapshot, click), as a user would.
 
-What to return (short):
-- PASS/FAIL, the command you ran, and the counts.
-- For each failure: test name, the assertion or error line, the file:line, and the shortest way to reproduce.
-- Copy key output lines verbatim; never paraphrase an error. Skip passing tests and noise.
-- If the run itself broke (missing dependency, crash), say that — it is not a test failure.
-- Missing: what you needed and didn't have (or "none").
+Return a short summary only: what was done, errors, and important things to note — including, in one line, any choice you made that he didn't specify. No file-by-file lists, no full test output, no long explanations: the SDD, diary and flags are kept by the hooks while you work.
+Missing: what you needed and didn't have (or "none").

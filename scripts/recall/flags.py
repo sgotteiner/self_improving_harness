@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import brain, clean, ctx, diary, embed, grounding, mdfile, transcript
 
 MARKERS = re.compile(r"choices beyond the spec|decisions i made|choices and gaps|decisions and placements|\(inferred\)|"
-                     r"\(claude's\)", re.I)
+                     r"\(claude's\)|\b(?:my |own )?choices?\s*:|\bchoices? i made", re.I)
 RETURNING = ("Agent", "Task", "SendMessage")  # tools whose result is an agent's return
 HEADING = "## Claude-on-its-own ({date})"
 BEFORE = r"^## Known debt"  # a new dated section goes above the debt list

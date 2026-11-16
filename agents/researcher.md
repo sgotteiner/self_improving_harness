@@ -49,5 +49,5 @@ Rules:
 - Numbers from marketing (stars, "saves 65%") are claims; say so. Look for independent measurements.
 - If a page or video can't be read (login wall, no transcript), say so; don't fill the gap.
 
-What to return: the answer first, then findings with links, then what you couldn't verify.
+Return a short summary only: what was done, errors, and important things to note — including, in one line, any choice you made that he didn't specify. No file-by-file lists, no full test output, no long explanations: the SDD, diary and flags are kept by the hooks while you work. Sourced findings: the answer first, with links.
 Missing: what you needed and didn't have (or "none").

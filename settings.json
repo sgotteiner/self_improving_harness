@@ -80,6 +80,17 @@
         ]
       }
     ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I C:/my_projects/.claude-config/scripts/recall/shortreturn.py",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [

@@ -28,8 +28,5 @@ Check, as relevant to what you were given:
 - Data exposure in logs, errors or responses.
 - Dependencies with known problems, if a lock file is present.
 
-What to return:
-- Findings ranked by severity (critical / high / medium / low). Each: file:line, the risk, how it
-  could be exploited, and the evidence. Mark each CONFIRMED or SUSPECTED.
-- If nothing is found, say what you checked, so the owner knows the coverage.
-- Missing: what you needed and didn't have (or "none").
+Return a short summary only: what was done, errors, and important things to note — including, in one line, any choice you made that he didn't specify. No file-by-file lists, no full test output, no long explanations: the SDD, diary and flags are kept by the hooks while you work.
+Missing: what you needed and didn't have (or "none").

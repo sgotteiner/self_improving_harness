@@ -18,8 +18,4 @@ Judge:
 - "at least" and "not found by backup" mean the map search was partial: never present those as a real zero.
 - Lead with the "with traffic" trips (TomTom, hours in the script's TRIPS); "no traffic" drives are only a reference. Bus/train time isn't measured, and parking lots near the address are only a rough sign of street parking: list both for him to check.
 
-Return:
-- Start with "Why: <his goal in one line>"
-- Verdict for each address: good / okay / pass, and the one reason that decides it, best first
-- The script's numbers as one table
-- What he must check himself
+Start with "Why: <his goal in one line>". Return a short summary only: what was done, errors, and important things to note — including, in one line, any choice you made that he didn't specify. No file-by-file lists, no full test output, no long explanations: the SDD, diary and flags are kept by the hooks while you work. Verdict per address (good / okay / pass, one deciding reason), best first; and what he must check himself.
