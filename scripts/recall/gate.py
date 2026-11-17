@@ -84,9 +84,15 @@ def main():
         gatecases.label(d.get("transcript_path", ""))
     except Exception as e:
         ctx.log(f"gate: labelling failed: {e!r}")
+    tp = d.get("transcript_path", "")
+    owed = None  # a `capture.py write` is still unpaid (capowed.py): blocks once, fails open
+    try:
+        import capowed
+        owed = capowed.settle(tp, d.get("stop_hook_active"))
+    except Exception as e:
+        ctx.log(f"gate: capture check failed: {e!r}")
     if d.get("stop_hook_active"):
         return
-    tp = d.get("transcript_path", "")
     r = check(tp)  # both checks always run, so one block carries every reason (a block from one never hides the other)
     reasons = []
     if r and ctx.hedged(r[1]):
@@ -94,13 +100,18 @@ def main():
         r = None
     if r:
         cid, why = r
-        if ctx.enabled("capture"):
+        rec = (f" Then record this occurrence, you have the context: `python -I scripts/recall/capture.py write <json file>` with "
+               f"{{source: \"gate\", lesson_id: \"{cid}\", situation, did, disliked = the gate's reason above}}; an unknown part "
+               "is \"(not stated)\", never a guess." if ctx.enabled("capture") else "")
+        if rec:
             try:
-                import capture
-                capture.from_gate(cid, why, tp)
+                import capowed
+                capowed.owe("gate", tp)
             except Exception as e:
-                ctx.log(f"gate: capture failed: {e!r}")
-        reasons.append(f"Output gate (cases/{cid}.md): {why} Fix this now, then finish.")
+                ctx.log(f"gate: capture marker failed: {e!r}")
+        reasons.append(f"Output gate (cases/{cid}.md): {why} Fix this now, then finish.{rec}")
+    if owed:
+        reasons.append(owed)
     dr = delegation(tp)
     if dr:
         reasons.append(dr)

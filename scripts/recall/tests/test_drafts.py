@@ -82,14 +82,11 @@ class Quiet(Env):
         self.assertEqual(drafts.discard("diary", "keep-me", "  "), 2)
         self.assertEqual(drafts.discard("diary", "../x", "false"), 0)  # not a draft: nothing happens
 
-    def test_a_captured_lesson_gets_its_todo_line(self):
-        import brain, capture, embed
-        replies = iter(["YES | he did not like it", json.dumps({"slug": "keep-it-short", "situation": ["s"], "wrong": "w", "right": "r", "lesson": "l",
-                                                                  "replay": "p", "pass_if": ["x"]})])
-        brain.ask = lambda p, system="", tag="": (next(replies), 1)
-        with mock.patch.object(capture, "PENDING", os.path.join(self.d, "p")), mock.patch.object(embed, "scores", return_value={}), \
-                mock.patch.object(capture.history, "record"):
-            self.assertTrue(capture.process("you did it wrong", h.transcript([h.user("x"), h.assistant("did it")])))
+    def test_a_written_lesson_gets_its_todo_line(self):
+        import capwrite
+        d = {"situation": "s", "did": "w", "disliked": "(not stated)", "his_words": "no", "lesson": "l", "slug": "keep-it-short"}
+        with mock.patch.object(capwrite, "PENDING", os.path.join(self.d, "p")), mock.patch.object(capwrite.history, "record"):
+            self.assertTrue(capwrite.write(d)[0])
         self.assertIn("review captured case `keep-it-short`", open(pending.TODO).read())
 
 

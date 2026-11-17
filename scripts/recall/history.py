@@ -23,11 +23,12 @@ def _con():
     return con
 
 
-def add(case_id, source, text, transcript="", date=None):
-    """source: 'gate' (output gate block, text = its reason) or 'correction' (text = his words)."""
+def add(case_id, source, text, transcript="", date=None, clean_text=None):
+    """source: 'gate' (output gate block, text = its reason) or 'correction' (text = his words). clean_text: the session's own
+    structured JSON, kept as is (no cleaning call)."""
     con = _con()
-    con.execute("INSERT INTO occurrence(date, case_id, source, text, transcript) VALUES (?,?,?,?,?)",
-                (date or str(datetime.date.today()), case_id, source, text, transcript or ""))
+    con.execute("INSERT INTO occurrence(date, case_id, source, text, transcript, clean_text) VALUES (?,?,?,?,?,?)",
+                (date or str(datetime.date.today()), case_id, source, text, transcript or "", clean_text))
     con.commit()
     con.close()
 
@@ -44,8 +45,8 @@ def bump(path, date=None):
     open(path, "w", encoding="utf-8", newline="").write(m.group(1) + head + m.group(3) + text[m.end():])
 
 
-def record(path, source, text, transcript=""):
-    add(os.path.basename(path)[:-3], source, text, transcript)
+def record(path, source, text, transcript="", clean_text=None):
+    add(os.path.basename(path)[:-3], source, text, transcript, clean_text=clean_text)
     bump(path)
     spawn_sync()
 

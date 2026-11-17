@@ -68,8 +68,8 @@ in a public lesson file. Reply with JSON only: {{"situation": "...", "assistant_
 - assistant_did: what the assistant did or said (one sentence).
 - disliked: what the owner did not like, in his own manner of speaking but in general words (one sentence; if the
   text is a check's reason, what the check found wrong).
-Each part is complete but short (max 30 words). Use only what the material says; if a part is not in it, infer it
-from the lesson and the other parts without inventing details. Remove or replace with a generic description: company,
+Each part is complete but short (max 30 words). Use only what the material says; if a part is not in it, write
+"(not stated)", never a guess. Remove or replace with a generic description: company,
 product and tool names, project names, file names and paths, people, session ids, identifying numbers, code.
 
 The lesson this occurrence belongs to: {lesson}

@@ -1,16 +1,17 @@
-"""Mistake capture. (a) the owner corrects the assistant -> the brain drafts a case into cases/_pending/ (or, if it
-closely matches an existing case, records an occurrence there); (b) the output gate caught a known mistake ->
-occurrence on that case. Pending cases are not used by the hooks until moved to cases/ by the owner's approval."""
-import datetime, os, sys
+"""Mistake capture. The brain only detects that the owner corrected the assistant; the session writes the case with
+`capture.py write` (capwrite.py) into cases/_pending/, or an occurrence on an existing lesson (also what the output gate asks
+for when it caught a known mistake). Pending cases are not used by the hooks until moved to cases/ by the owner's approval."""
+import json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import brain, ctx, embed, history, index, pending
+import brain, capwrite, ctx, embed, index, pending
 from casesave import PENDING, approve, check_all, move  # noqa: F401 (the CLI below; callers of capture.move/approve)
 
 DETECT = ("The assistant's previous turn:\n{prev}\n\nTool calls: {tools}{rej}\n\nThe owner's new message: {prompt}\n\n"
           "Is the new message a correction or complaint about how the assistant behaved (not what it built): e.g. 'I told "
           "you', 'that's not what I asked', 'why did you', ignoring an instruction, missing the point? A new request, an "
           "approval or a thanks is NO. Reply 'NO' or 'YES | <one sentence: the assistant's mistake>'.")
+# DRAFT and matches() are no longer on the capture path; only the evals (mechcapture.py) still use them
 DRAFT = ("Draft a lesson case from this mistake of an AI coding assistant. Mistake: {why}\nAssistant's turn:\n{prev}\n"
          "Owner's words: {prompt}\n\nReply with JSON only: {{\"slug\": \"kebab-case-id\", \"situation\": [3-4 phrasings of how "
          "the situation shows up, including what the session is doing at that moment], \"wrong\": \"what was done wrong\", "
@@ -49,12 +50,9 @@ def matches(d, why, exclude=()):
     return [best] if best and sc[best] >= ctx.SAME else []
 
 
-def from_gate(cid, why, tp):
-    history.record(os.path.join(index.CASES, cid + ".md"), "gate", why, tp)
-
-
 def process(prompt, tp):
-    """Called on a new human prompt. Returns the path touched, or None."""
+    """Called on a new human prompt. Haiku only detects; on YES returns the instruction line for the session, which has the
+    context and writes the case itself (capwrite.write). None = nothing to capture."""
     prev, tools = ctx.last_turn(tp, prompt.strip())
     if not prev.strip():
         return None
@@ -63,33 +61,7 @@ def process(prompt, tp):
                        tag="capture-detect")
     if not out.upper().startswith("YES"):
         return None
-    why = out.partition("|")[2].strip()
-    d = pending.json_of(brain.ask(DRAFT.format(why=why, prev=prev, prompt=prompt), tag="capture-draft")[0])
-    if not d or not d.get("situation"):
-        return None
-    hit = matches(d, why)
-    if hit:  # a repeat: an occurrence on every lesson it matches (graph-recall), else on the one best case
-        paths = [os.path.join(PENDING if c.startswith("_pending/") else index.CASES, c.split("/")[-1] + ".md") for c in hit]
-        for path in paths:
-            history.record(path, "correction", prompt.strip(), tp)
-        return paths[0]
-    slug = pending.slugify(d.get("slug", ""), "captured-mistake")
-    path = os.path.join(PENDING, slug + ".md")
-    os.makedirs(PENDING, exist_ok=True)
-    q = pending.q
-    body = (f"---\nid: {slug}\ndate: {datetime.date.today()}\nsource: captured automatically; transcript {tp}\nstatus: pending\n"
-            f"asked: false\nlevel: advice\nhis_words: {q(prompt.strip())}\nsituation:\n"
-            + "".join(f"  - {q(x)}\n" for x in d["situation"])
-            + f"wrong: {q(d.get('wrong', ''))}\nright: {q(d.get('right', ''))}\nlesson: {q(d.get('lesson', ''))}\n"
-            f"replay: {q(d.get('replay', ''))}\npass_if:\n" + "".join(f"  - {q(x)}\n" for x in d.get("pass_if", []))
-            + "occurrences: 0\n---\n")
-    open(path, "w", encoding="utf-8").write(body)
-    history.record(path, "correction", prompt.strip(), tp)  # his words go to history.db; the count becomes 1
-    try:
-        pending.todo_add(f"- [ ] review captured case `{slug}` (cases/_pending/{slug}.md): add, edit or discard")
-    except OSError as e:
-        ctx.log(f"capture: todo not updated: {e!r}")
-    return path
+    return capwrite.instruction(out.partition("|")[2].strip() or "not specified", tp, prompt)
 
 
 def _note(f, d):
@@ -118,5 +90,19 @@ if __name__ == "__main__" and len(sys.argv) >= 2:
         sys.exit(0 if approve(*sys.argv[2:4]) else 1)
     if sys.argv[1] == "check":
         sys.exit(0 if check_all(*sys.argv[2:3]) else 1)
-    print("usage: capture.py approve <slug> <advice|check|rule> | capture.py check [slug]")
+    if sys.argv[1] == "lessons":
+        print(*[f"{i}: {l}" for i, l in capwrite.lessons()], sep="\n")
+        sys.exit(0)
+    if sys.argv[1] == "write" and len(sys.argv) >= 4 and sys.argv[2] == "--none":
+        ok, msg = capwrite.none(sys.argv[3])
+        print(msg, file=sys.stdout if ok else sys.stderr)
+        sys.exit(0 if ok else 1)
+    if sys.argv[1] == "write" and len(sys.argv) >= 3:
+        try:
+            ok, msg = capwrite.write(json.load(open(sys.argv[2], encoding="utf-8")))
+        except (OSError, ValueError) as e:
+            ok, msg = False, f"cannot read the JSON file: {e}"
+        print(msg, file=sys.stdout if ok else sys.stderr)
+        sys.exit(0 if ok else 1)
+    print("usage: capture.py approve <slug> <advice|check|rule> | capture.py check [slug] | capture.py write <json file> | capture.py write --none '<why>' | capture.py lessons")
     sys.exit(2)
