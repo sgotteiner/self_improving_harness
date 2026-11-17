@@ -22,7 +22,7 @@ How to run:
 - Use the test command the orchestrator gives you. If none is given, read the project's Tests
   document (listed under "Project documents" in its CLAUDE.md) for what is measured and how.
   If there is none, stop and say so — do not guess one.
-- For the setup itself (the .claude-config repo) the one command is `python -I scripts/run_all_tests.py`: run it, return its summary lines and PASSED, or FAILED with the failing lines. Say only passed or what the errors are.
+- For the setup itself (the .claude-config repo) the one command is `python -I scripts/run_chosen_checks.py --files <files>`, with the list of files the orchestrator says the task changed (repo-relative; without a list it falls back to everything changed since the last commit, and says so): run it, return its summary lines and PASSED, or FAILED with the failing lines. Say only passed or what the errors are.
 - Run only what you were asked to run. No full suite unless asked.
 - Web pages: drive a real browser with `playwright-cli` (open, snapshot, click), as a user would.
 

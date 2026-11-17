@@ -1,4 +1,4 @@
-"""Which suites of run_all_tests.py a change needs: files changed -> {suite name: (why, extra args)}. Pure mapping, no running."""
+"""Which suites of run_chosen_checks.py a change needs: files changed -> {suite name: (why, extra args)}. Pure mapping, no running."""
 import os, re, subprocess
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -6,7 +6,7 @@ TESTS = os.path.join(ROOT, "scripts", "recall", "tests")
 CAPTURE = {"index", "embed", "retrieve", "validate", "casesave", "capture"}
 DECISIONS = {"decisions", "eval_decisions"}
 GATE = {"gate", "delegate", "delegvet", "turnfacts", "gatecases", "eval_gate", "suitecmd"}
-SELF = {"scripts/run_all_tests.py", "scripts/select_tests.py"}
+SELF = {"scripts/run_chosen_checks.py", "scripts/select_tests.py"}
 
 
 def changed_files(since=None):
@@ -28,6 +28,11 @@ def importers():
     return {k: sorted(v) for k, v in out.items()}
 
 
+def uncovered(files):
+    """The changed .py files no check covers (select gives them no suite): reported, never answered with a whole suite."""
+    return [f for f in files if f.endswith(".py") and not select([f])]
+
+
 def select(files):
     """{suite: (why, extra args)} in run order; empty when nothing relevant changed."""
     why, tests, all_recall, imp = {}, set(), False, importers()
@@ -46,12 +51,9 @@ def select(files):
                 all_recall = True; pick("recall tests", f)
         elif d == "scripts/recall" and f.endswith(".py"):
             hit = imp.get(base, [])
-            elsewhere = base in CAPTURE | DECISIONS | GATE
             tests |= set(hit)
             if hit:
                 pick("recall tests", f)
-            elif not elsewhere:
-                all_recall = True; pick("recall tests", f)  # unsure what covers it: the whole recall suite
             if base in CAPTURE:
                 pick("capture check", f)
             if base in DECISIONS:

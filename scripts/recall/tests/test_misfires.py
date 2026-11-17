@@ -68,7 +68,7 @@ class InputStep(unittest.TestCase):
 class TesterRule(unittest.TestCase):
     def test_running_the_one_test_command_satisfies_the_tester_rule(self):
         edit = h.assistant(h.tool("Edit", {"file_path": os.path.join(ROOT, "scripts", "recall", "x.py"), "old_string": "a", "new_string": "b"}), "Changed it.")
-        run = h.assistant(h.tool("Bash", {"command": "python -I scripts/run_all_tests.py"}), "Ran everything; PASSED.")
+        run = h.assistant(h.tool("Bash", {"command": "python -I scripts/run_chosen_checks.py"}), "Ran everything; PASSED.")
         self.assertEqual(step([h.user("x"), edit, run], "BLOCK TESTER | no test ran")[0][0], "TESTER-HERE")  # a test ran, but in the main session
         self.assertEqual(step([h.user("x"), edit], "BLOCK TESTER | no test ran")[0][0], "TESTER")  # control: nothing ran
         self.assertNotIn("ran_all", turnfacts.turn(h.transcript([h.user("x"), edit, run]), ROOT))  # no veto of its own: only the tester agent satisfies the rule
@@ -96,7 +96,7 @@ class TesterHere(unittest.TestCase):
             self.assertIsNone(step([h.user("x"), self.bash(c)], "OK")[0], c)  # names inside a comment, a .json or a message are no suite
         for c in ("git log --oneline", "git status", "ls scripts", "grep -n run_tests.py scripts/x.py", "cat scripts/recall/tests/run_tests.py"):
             self.assertIsNone(step([h.user("x"), self.bash(c)], "OK")[0], c)
-        for c in ("node skills/sdd/scripts/test-sdd.js", "python -I scripts/run_all_tests.py", "pytest -q", "npm test", "python -I scripts/recall/eval_decisions.py",
+        for c in ("node skills/sdd/scripts/test-sdd.js", "python -I scripts/run_chosen_checks.py", "pytest -q", "npm test", "python -I scripts/recall/eval_decisions.py",
                   "python -I scripts/recall/capture.py check"):
             self.assertEqual(step([h.user("x"), self.bash(c)], "OK")[0][0], "TESTER-HERE", c)
 

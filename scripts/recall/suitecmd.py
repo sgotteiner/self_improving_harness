@@ -3,7 +3,7 @@ result or a review text says (the purpose fell short; fixes asked for). Real com
 name are read from the command, so a comment, a `--out test.json` or the name inside a grep never counts."""
 import os, re
 
-SCRIPT = re.compile(r"^(test_[\w.-]*\.py|test-[\w.-]*\.js|run_tests\.py|run_all_tests\.py|eval_\w+\.py|replay\.py)$")
+SCRIPT = re.compile(r"^(test_[\w.-]*\.py|test-[\w.-]*\.js|run_tests\.py|run_chosen_checks\.py|eval_\w+\.py|replay\.py)$")
 READ_ONLY = re.compile(r"^\s*(grep|rg|cat|ls|git|head|tail|sed|echo|find|wc|diff)\b")  # small reads: never a suite run
 FELL = re.compile(r"\bFAIL(ED)?\b|\bfell short\b|\b[1-9]\d* (failed|failures?|errors?)\b|Traceback", re.I)  # a result: the purpose was not met
 FIXES = re.compile(r"fix (these |this |it |them )?first|fix before|must be fixed|must fix|blocking|do not (commit|merge)|not ready", re.I)  # a review: fixes asked for

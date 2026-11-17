@@ -1,9 +1,9 @@
-"""scripts/select_tests.py + run_all_tests.py: a change selects only the suites it needs; --all selects every suite."""
-import io, os, sys, unittest
+"""scripts/select_tests.py + run_chosen_checks.py: a change selects only the suites it needs; --all selects every suite."""
+import io, os, subprocess, sys, unittest
 from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-import run_all_tests as r
+import run_chosen_checks as r
 import select_tests as s
 
 PY = [sys.executable, "-I", "-c"]
@@ -26,8 +26,9 @@ class Select(unittest.TestCase):
     def test_an_unrelated_file_selects_nothing(self):
         self.assertEqual(s.select(["README.txt", "tasks/todo.md"]), {})
 
-    def test_a_module_no_test_covers_runs_the_whole_recall_suite(self):
-        self.assertEqual(s.select(["scripts/recall/replay.py"])["recall tests"][1], [])
+    def test_a_module_no_test_covers_selects_nothing_and_is_uncovered(self):
+        self.assertEqual(s.select(["scripts/recall/replay.py"]), {})
+        self.assertEqual(s.uncovered(["scripts/recall/replay.py", "scripts/recall/shortreturn.py"]), ["scripts/recall/replay.py"])
 
     def test_a_changed_test_file_runs_itself(self):
         self.assertEqual(s.select(["scripts/recall/tests/test_flags.py"])["recall tests"][1], ["test_flags"])
@@ -51,6 +52,12 @@ class Main(unittest.TestCase):
         self.assertIn("CHOOSE  recall tests: x.py changed", o)
         self.assertIn("['test_x']", o)
         self.assertNotIn("sdd tests", o)
+
+    def test_the_given_file_list_decides_and_an_uncovered_file_runs_nothing(self):
+        cmd = [sys.executable, "-I", r.__file__, "--files", "scripts/recall/replay.py"]
+        o = subprocess.run(cmd, capture_output=True, text=True).stdout
+        self.assertIn("not covered by any check: scripts/recall/replay.py", o)
+        self.assertTrue("nothing to test" in o and "CHOOSE" not in o and "no --files" not in o, o)
 
     def test_nothing_chosen_says_so(self):
         self.assertIn("nothing to test", self.go({}))

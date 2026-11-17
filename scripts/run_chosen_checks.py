@@ -1,9 +1,10 @@
 """One command for the tests of what changed (the tester agent runs this and nothing else): prints one line per chosen suite
 and a final PASSED or FAILED, with the failing lines only. Exit 0 = PASSED.
-Usage: python -I scripts/run_all_tests.py [--since <ref>] [--all] [--eval]
-  (default)       only the suites the files changed since the last commit (git diff HEAD + untracked) need; a CHOOSE line says
-                  why for each, and the recall unit tests run per test file (only the ones importing a changed module).
-                  Nothing relevant changed -> "nothing to test".
+Usage: python -I scripts/run_chosen_checks.py [--files <f> ...] [--since <ref>] [--all] [--eval]
+  --files <f> ..  the files the task changed (repo-relative): selection uses exactly these. A CHOOSE line says why for each
+                  suite, and the recall unit tests run per test file (only the ones importing a changed module).
+                  Nothing relevant changed -> "nothing to test". A changed .py no check covers -> "not covered by any check: <f>".
+  (default)       without --files: the files changed since the last commit (git diff HEAD + untracked); a line says so.
   --since <ref>   the files changed since <ref> instead, e.g. HEAD~1 for the commit about to be pushed.
   --all           every suite, regardless of changes: only when the owner asks for a full regression run.
   --eval          also force the two paid evals even when their files are unchanged.
@@ -58,9 +59,11 @@ def run(cmd, timeout):
     return p.returncode == 0, summary[:110], [l[:200] for l in lines if BAD.search(l)][:12] if p.returncode else []
 
 
-def main(force=False, chosen=None):
+def main(force=False, chosen=None, uncovered=()):
     """chosen: {suite name: (why, extra args)} from select_tests.select; None = every suite."""
     failed = []
+    for f in uncovered:
+        print(f"not covered by any check: {f}")
     if chosen is not None and not chosen:
         print("nothing to test (no changed file maps to a suite)")
     for name, cmd, timeout, files in SUITES:
@@ -84,7 +87,25 @@ def main(force=False, chosen=None):
     return 1 if failed else 0
 
 
+def repo_path(x):
+    """Any form a caller passes (./x, absolute C:\\..., Git Bash /c/...) -> repo-relative with '/', as select_tests expects."""
+    m = re.match(r"^/([a-zA-Z])/(.*)", x)
+    if m:
+        x = f"{m.group(1)}:/{m.group(2)}"
+    return os.path.relpath(os.path.abspath(x), ROOT).replace("\\", "/")
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     since = a[a.index("--since") + 1] if "--since" in a and a.index("--since") + 1 < len(a) else None
-    sys.exit(main("--eval" in a, None if "--all" in a else select_tests.select(select_tests.changed_files(since))))
+    if "--files" in a:
+        files = []
+        for x in a[a.index("--files") + 1:]:
+            if x.startswith("--"):
+                break
+            files.append(repo_path(x))
+    else:
+        files = select_tests.changed_files(since)
+        print(f"no --files given: using the {len(files)} files changed since {since or 'the last commit'}")
+    every = "--all" in a
+    sys.exit(main("--eval" in a, None if every else select_tests.select(files), [] if every else select_tests.uncovered(files)))

@@ -1,10 +1,10 @@
-"""scripts/run_all_tests.py: one line per suite, PASSED/FAILED with the failing lines only, and the two paid evals run only when
+"""scripts/run_chosen_checks.py: one line per suite, PASSED/FAILED with the failing lines only, and the two paid evals run only when
 their files changed since they last passed (or with --eval)."""
 import io, os, sys, tempfile, time, unittest
 from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-import run_all_tests as r
+import run_chosen_checks as r
 
 PY = [sys.executable, "-I", "-c"]
 
