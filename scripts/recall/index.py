@@ -50,10 +50,20 @@ def history_records(cid):
     return out
 
 
-def history_texts(cid):
+def occ_key(r):
+    """Identity of an occurrence block (the lesson line is the case's own): one block in several cases' history is one path."""
+    return tuple(r.get(k) for k in ("date", "source") + PARTS[:3])
+
+
+def joined(r):
+    """One recall document of an occurrence: its situation, what the assistant did, what he did not like."""
+    return " ".join(f"{k.capitalize()}: {r[k]}" for k in PARTS[:3] if r.get(k))
+
+
+def history_texts(cid, skip=()):
     """One recall document per real occurrence: its situation, what the assistant did, what he did not like. The
-    lesson is not repeated (the case's own lesson is a document of its own)."""
-    return [" ".join(f"{k.capitalize()}: {r[k]}" for k in PARTS[:3] if r.get(k)) for r in history_records(cid)]
+    lesson is not repeated (the case's own lesson is a document of its own). skip = occ_keys left out (held-out evals)."""
+    return [joined(r) for r in history_records(cid) if occ_key(r) not in skip]
 
 
 def case_files():

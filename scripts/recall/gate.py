@@ -25,21 +25,31 @@ PROMPT = ("Cases (lessons from earlier mistakes of this assistant):\n{cases}\n\n
           "what to do now>'.")
 
 
-def check(tp):
-    import brain, index, retrieve
+def candidates(text, tools, exclude=()):
+    """[(score, case id, path or None)]: the graph's reply step (the turn vs what-was-done nodes) when graph-recall is on, else
+    the flat search. exclude = occurrence keys held out (evals only)."""
+    q = ctx.chunks(text) + ctx.chunks("\n".join(tools))
+    if ctx.enabled("graph-recall"):
+        import graph
+        return graph.at_reply(q, 6, set(exclude))
+    import retrieve
+    return [(s, c, None) for s, c in retrieve.search(q, 6, "emb", skip=exclude)]
+
+
+def check(tp, exclude=()):
+    import brain, graph, index
     text, tools = ctx.last_turn(tp)
     if not text.strip():
         ctx.log("gate: no assistant text in the last turn")
         verdicts.log(tp, "lesson", "OK", skip="no assistant text")
         return None
-    hits = [(s, c) for s, c in retrieve.search(ctx.chunks(text) + ctx.chunks("\n".join(tools)), 6, "emb")
-            if s >= ctx.RELEVANCE_MIN]
+    hits = [h for h in candidates(text, tools, exclude) if h[0] >= ctx.RELEVANCE_MIN]
     if not hits:
         ctx.log("gate: no case above the relevance cutoff")
         verdicts.log(tp, "lesson", "OK", skip="no case above the cutoff")
         return None
-    metas = {c: index.meta(c) for _, c in hits}
-    block = "\n".join(f"- {c}: situation: {m[1]} Lesson: {m[2]} Right: {m[3]}" for c, m in metas.items())
+    metas = {c: index.meta(c) for _, c, _ in hits}
+    block = "\n".join(graph.case_line(c, metas[c], p) for _, c, p in hits)  # a path: the matched past action and his complaint
     out, tok = brain.ask(PROMPT.format(cases=block, tools="\n".join(tools) or "(none)", text=text), tag="gate")
     if out.startswith("VIOLATION"):
         cid, _, why = [x.strip(" *`") for x in out[len("VIOLATION"):].partition("|")]

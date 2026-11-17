@@ -79,7 +79,7 @@ def sync(clean_new=True):
         todo = con.execute("SELECT id, case_id, source, text, transcript FROM occurrence WHERE clean_text IS NULL "
                            "OR clean_text NOT LIKE '{%' ORDER BY id").fetchall()
         for i, cid, src, text, tp in todo:
-            c = clean.clean(text, src, _lesson(cid), tp)
+            c = clean.clean(text, src, _lesson(cid), tp)  # each lesson gets its own cleaning: his complaint is about that lesson
             if c:
                 con.execute("UPDATE occurrence SET clean_text=? WHERE id=?", (json.dumps(c), i))
                 con.commit()

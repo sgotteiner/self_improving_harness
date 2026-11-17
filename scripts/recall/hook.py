@@ -13,23 +13,33 @@ STEP2 = ("Situation: {sit}\n\nPast cases (lessons from earlier mistakes):\n{case
          "'NONE' or one line per case: <id> | <why it applies, one factual sentence>.")
 
 
+def candidates(q):
+    """[(score, case id, path or None)]: the graph's situation step when graph-recall is on, else the flat search."""
+    if ctx.enabled("graph-recall"):
+        import graph
+        return graph.at_message(q, 8)
+    import retrieve
+    return [(s, c, None) for s, c in retrieve.search(q, 8, "emb")]
+
+
 def recall(prompt, transcript):
-    import brain, index, retrieve
+    import brain, graph, index
     sit, _ = brain.ask(STEP1.format(ctx="\n".join(ctx.recent(transcript, 4)), prompt=prompt), tag="recall-1")
-    hits = retrieve.search(ctx.chunks(sit + "\n" + prompt), 8, "emb")
-    hits = [(s, c) for s, c in hits if s >= ctx.RELEVANCE_MIN]
+    hits = [h for h in candidates(ctx.chunks(sit + "\n" + prompt)) if h[0] >= ctx.RELEVANCE_MIN]
     if not hits:
         ctx.log("hook: no case above the relevance cutoff, no second brain call")
         return []
-    metas = {c: index.meta(c) for _, c in hits}
-    block = "\n".join(f"- {c}: situation: {m[1]} Lesson: {m[2]} Right: {m[3]}" for c, m in metas.items())
+    metas = {c: index.meta(c) for _, c, _ in hits}
+    paths = {c: p for _, c, p in hits}
+    block = "\n".join(graph.case_line(c, m, paths[c]) for c, m in metas.items())
     out, _ = brain.ask(STEP2.format(sit=sit, cases=block), tag="recall-2")
     lines = []
     for l in out.splitlines()[:3]:
         cid, _, why = [x.strip(" -*`") for x in l.partition("|")]
         if cid in metas:
             date, _, lesson, right = metas[cid]
-            lines.append(f"Related past case (cases/{cid}.md, {date}): {why} Lesson: {lesson} Right: {right}")
+            path = f" {graph.trace(paths[cid])}" if paths[cid] else ""  # the traced path, graph-recall only
+            lines.append(f"Related past case (cases/{cid}.md, {date}): {why}{path} Lesson: {lesson} Right: {right}")
     return lines
 
 

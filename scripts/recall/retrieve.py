@@ -9,8 +9,9 @@ N = 100
 FIELDS = ("situation", "wrong", "right", "lesson")
 
 
-def docs(history=True, fields=FIELDS):
-    """{case id: [texts]}. history=False -> the case's own fields only (the baseline of the held-out test)."""
+def docs(history=True, fields=FIELDS, skip=()):
+    """{case id: [texts]}. history=False -> the case's own fields only (the baseline of the held-out test).
+    skip = occurrence keys (index.occ_key) left out."""
     out = {}
     for f in index.case_files():
         d = index.parse(f)
@@ -19,17 +20,17 @@ def docs(history=True, fields=FIELDS):
         for k in fields:
             v = d.get(k, [])
             t += v if isinstance(v, list) else [v]
-        out[cid] = [x for x in t if x] + (index.history_texts(os.path.basename(f)[:-3]) if history else [])
+        out[cid] = [x for x in t if x] + (index.history_texts(os.path.basename(f)[:-3], skip) if history else [])
     return out
 
 
-def search(query, k=3, method="hybrid", backend=embed.DEFAULT, history=True, fields=FIELDS):
+def search(query, k=3, method="hybrid", backend=embed.DEFAULT, history=True, fields=FIELDS, skip=()):
     """Return [(score, id)] best first. Score scale differs per method."""
     if method != "emb" and not isinstance(query, str):
         query = "\n".join(query)
     if method == "bm25":
         return index.search(query, k)
-    emb = sorted(embed.scores(query, docs(history, fields), backend).items(), key=lambda x: -x[1])
+    emb = sorted(embed.scores(query, docs(history, fields, skip), backend).items(), key=lambda x: -x[1])
     if method == "emb":
         return [(s, c) for c, s in emb[:k]]
     bm = index.search(query, N)

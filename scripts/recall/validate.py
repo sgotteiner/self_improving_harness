@@ -3,7 +3,7 @@ Each check returns (ok, evidence); run() returns [(step, ok, evidence)]. No chec
 Length rule: short but not missing. Nothing is capped by size; every part must be present and non-empty."""
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import clean, embed, index, retrieve
+import clean, ctx, embed, index, retrieve
 
 REQUIRED = ["id", "date", "level", "situation", "wrong", "right", "lesson", "replay", "pass_if"]
 HUMAN = ["situation", "wrong", "right", "lesson", "replay", "pass_if"]  # the fields a person (or the draft brain) wrote
@@ -59,7 +59,7 @@ def check_embeddings(path, d):
 
 
 def check_recall(path, d):
-    """The case's own lesson and two situation lines are searched with retrieve.search (the method the hooks use); the
+    """The case's own lesson and two situation lines are searched with retrieve.search (the method the hooks use; the graph when graph-recall is on); the
     case must rank #1 or #2. That proves the case is in the index with working vectors. Evidence also shows the
     held-out rank (the query text removed from the case's documents), which measures how well the case generalizes;
     it is informational and does not fail the check."""
@@ -71,9 +71,14 @@ def check_recall(path, d):
     base = retrieve.docs()
     if cid not in base:
         return False, "case is not in the retrieval documents"
+    if ctx.enabled("graph-recall"):  # the graph's best node of any kind per lesson, the same ranking the hooks use when it is on
+        import graph
+        search = lambda q: [c for _, c, _ in graph.any_node(q, 20)]
+    else:
+        search = lambda q: [c for _, c in retrieve.search(q, 20, "emb")]
     ranks, held = [], []
     for n, q in qs:
-        hits = [c for _, c in retrieve.search(q, 20, "emb")]
+        hits = search(q)
         ranks.append((n, hits.index(cid) + 1 if cid in hits else 99))
         docs = dict(base)
         docs[cid] = [x for x in docs[cid] if x != q]

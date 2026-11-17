@@ -57,3 +57,4 @@ node_modules/
 /scripts/recall/results/*.stamp
 # drafts the main session discarded as false captures: kept so his words are recoverable, never pushed
 _discarded/
+/scripts/recall/results/mech_cache.jsonl

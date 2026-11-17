@@ -31,6 +31,24 @@ def _docs():
     return out
 
 
+def graph_matches(d, why, exclude=()):
+    """The graph's capture compare: his lesson against lesson nodes, what was done against action nodes, his complaint against
+    complaint nodes; the lessons graph.match returns (graph.ATTACH decides how many)."""
+    import graph
+    parts = {"lesson": d.get("lesson", ""), "action": d.get("wrong", ""), "complaint": why}
+    return [c for _, c in graph.match({k: v for k, v in parts.items() if v}, set(exclude))]
+
+
+def matches(d, why, exclude=()):
+    """Case ids (pending ones as '_pending/<slug>') that a new mistake repeats; [] = it is new. exclude = ids left out (evals).
+    Off: the single best case by situation + lesson. On (graph-recall): graph_matches."""
+    if ctx.enabled("graph-recall"):
+        return graph_matches(d, why, exclude)
+    sc = {c: s for c, s in embed.scores(" ".join(d["situation"]) + " " + d.get("lesson", ""), _docs()).items() if c not in exclude}
+    best = max(sc, key=sc.get) if sc else None
+    return [best] if best and sc[best] >= ctx.SAME else []
+
+
 def from_gate(cid, why, tp):
     history.record(os.path.join(index.CASES, cid + ".md"), "gate", why, tp)
 
@@ -49,12 +67,12 @@ def process(prompt, tp):
     d = pending.json_of(brain.ask(DRAFT.format(why=why, prev=prev, prompt=prompt), tag="capture-draft")[0])
     if not d or not d.get("situation"):
         return None
-    sc = embed.scores(" ".join(d["situation"]) + " " + d.get("lesson", ""), _docs())
-    best = max(sc, key=sc.get) if sc else None
-    if best and sc[best] >= ctx.SAME:
-        path = os.path.join(PENDING if best.startswith("_pending/") else index.CASES, best.split("/")[-1] + ".md")
-        history.record(path, "correction", prompt.strip(), tp)
-        return path
+    hit = matches(d, why)
+    if hit:  # a repeat: an occurrence on every lesson it matches (graph-recall), else on the one best case
+        paths = [os.path.join(PENDING if c.startswith("_pending/") else index.CASES, c.split("/")[-1] + ".md") for c in hit]
+        for path in paths:
+            history.record(path, "correction", prompt.strip(), tp)
+        return paths[0]
     slug = pending.slugify(d.get("slug", ""), "captured-mistake")
     path = os.path.join(PENDING, slug + ".md")
     os.makedirs(PENDING, exist_ok=True)
