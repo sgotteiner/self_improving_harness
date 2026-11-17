@@ -50,5 +50,11 @@
   "short-returns": {
     "enabled": true,
     "about": "a SubagentStop hook (scripts/recall/shortreturn.py) blocks once an agent final message over 25 lines and asks for a short summary (done, errors, notes, own choices in one line); never twice, fails open; the long record is kept by the SDD/diary/flags hooks"
+  },
+  "test-limit": {
+    "enabled": true,
+    "seconds": 60,
+    "pattern": "(?:\\w+=\\S*\\s+)*(?:(?:timeout\\s+\\d+\\s+)?(?:py|python3?)(?:\\.exe)?(?:\\s+-\\w+)*\\s+(?:-m\\s+(?:pytest|unittest|eval_\\w+|test[_-]\\w+)|\\S*(?:run_chosen_checks|run_tests|eval_\\w+|test[_-]\\w+|\\w+_test|replay)\\.py)|pytest|vitest|jest|(?:npm|pnpm|yarn)\\s+(?:run\\s+)?test|make\\s+test|cargo\\s+test|go\\s+test|(?:bash|sh)\\s+\\S*test\\S*\\.sh|\\./\\S*test\\S*\\.sh)",
+    "about": "the owner's rule 2026-11-16: a test or eval run gets at most 1 minute, then the agent stops and asks him whether to continue. Hooks in scripts/testlimit.py: PreToolUse on Bash wraps a command that runs a test (a segment starting with `pattern`) in `timeout`; his short yes on his next message (UserPromptSubmit) approves re-running that exact cut command once, within 30 min"
   }
 }

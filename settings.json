@@ -65,6 +65,23 @@
             "type": "command",
             "command": "python -I C:/my_projects/.claude-config/scripts/recall/hook.py",
             "timeout": 300
+          },
+          {
+            "type": "command",
+            "command": "python -I C:/my_projects/.claude-config/scripts/testlimit.py prompt",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I C:/my_projects/.claude-config/scripts/testlimit.py pre",
+            "timeout": 10
           }
         ]
       }
