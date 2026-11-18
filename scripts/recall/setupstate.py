@@ -71,7 +71,24 @@ def git_changed(tp, root):
     except (OSError, ValueError):
         return []
     now = git_state(root)
-    return [r for r, v in (now or {}).items() if before is not None and before.get(r) != v]
+    return [r for r, v in (now or {}).items() if before is not None and before.get(r) != v and not counters_only(r, root)]
+
+
+COUNTER_FIELDS = ("occurrences:", "last_seen:")  # a case's fields the capture hooks maintain on every recorded repeat
+
+
+def counters_only(rel, root=ctx.ROOT):
+    """True for a case file whose uncommitted change touches only the hook-maintained counters (a recorded repeat), so
+    recording a mistake is not counted as an edit that needs its own commit. Any doubt (git fails) -> False."""
+    if not (rel.startswith("cases/") and rel.endswith(".md")):
+        return False
+    try:
+        diff = subprocess.run(["git", "-C", root, "diff", "HEAD", "--unified=0", "--", rel], capture_output=True,
+                              text=True, encoding="utf-8", timeout=GIT_TIMEOUT).stdout
+    except (OSError, subprocess.SubprocessError):
+        return False
+    lines = [l[1:].strip() for l in diff.splitlines() if l[:1] in "+-" and not l.startswith(("+++", "---"))]
+    return bool(lines) and all(l.startswith(COUNTER_FIELDS) for l in lines)
 
 
 def setup_edited(tp, exclude=None, root=ctx.ROOT):
