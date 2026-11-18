@@ -94,7 +94,7 @@ if __name__ == "__main__" and len(sys.argv) >= 2:
         print(*[f"{i}: {l}" for i, l in capwrite.lessons()], sep="\n")
         sys.exit(0)
     if sys.argv[1] == "write" and len(sys.argv) >= 4 and sys.argv[2] == "--none":
-        ok, msg = capwrite.none(sys.argv[3])
+        ok, msg = capwrite.none(sys.argv[3], "gate" if "--gate" in sys.argv[4:] else "correction")
         print(msg, file=sys.stdout if ok else sys.stderr)
         sys.exit(0 if ok else 1)
     if sys.argv[1] == "write" and len(sys.argv) >= 3:
@@ -104,5 +104,5 @@ if __name__ == "__main__" and len(sys.argv) >= 2:
             ok, msg = False, f"cannot read the JSON file: {e}"
         print(msg, file=sys.stdout if ok else sys.stderr)
         sys.exit(0 if ok else 1)
-    print("usage: capture.py approve <slug> <advice|check|rule> | capture.py check [slug] | capture.py write <json file> | capture.py write --none '<why>' | capture.py lessons")
+    print("usage: capture.py approve <slug> <advice|check|rule> | capture.py check [slug] | capture.py write <json file> | capture.py write --none '<why>' [--gate] | capture.py lessons")
     sys.exit(2)

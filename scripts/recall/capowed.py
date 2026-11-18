@@ -12,7 +12,8 @@ REASON = {"correction": "Capture: his message corrected you and the case was not
                         "write <json file>` now (situation, did, disliked, his_words, lesson + slug or lesson_id), or `capture.py "
                         "write --none \"<why it is not a mistake>\"` if the detector was wrong, then finish.",
           "gate": "Capture: the output gate caught a known mistake earlier and no occurrence was recorded. Run `python -I "
-                  "scripts/recall/capture.py write <json file>` with source \"gate\" and lesson_id, then finish."}
+                  "scripts/recall/capture.py write <json file>` with source \"gate\" and lesson_id, or `capture.py write --none \"<why the "
+                  "block was a false alarm>\" --gate` if it was, then finish."}
 
 
 def key(tp, prompt=None):

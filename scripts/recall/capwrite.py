@@ -45,12 +45,12 @@ def instruction(why, tp, prompt):
             "scripts/recall/capture.py lessons` lists all):\n" + near)
 
 
-def none(why):
-    """The session says the detector was wrong: logged, no case, the debt is paid."""
+def none(why, kind="correction"):
+    """The session says the detector (kind correction) or the gate (kind gate) was wrong: logged, no case, the debt is paid."""
     if not why.strip():
         return False, "give the reason it is not a mistake"
-    ctx.log(f"capture: detector YES settled as not a mistake: {why.strip()}")
-    capowed.pay("correction")
+    ctx.log(f"capture: {kind} settled as not a mistake: {why.strip()}")
+    capowed.pay(kind)
     return True, "logged, no case written"
 
 
