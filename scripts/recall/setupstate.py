@@ -7,7 +7,8 @@ import ctx, transcript
 EDIT_TOOLS = ("Edit", "MultiEdit", "Write", "NotebookEdit")
 SETUP_PATHS = ("CLAUDE.md", "settings.json", "slots.json", "agents/", "skills/", "scripts/", "cases/", "mods/",
                "tasks/delegation-draft.md")
-SETUP_SKIP = ("cases/_pending/", "cases/history/", "tasks/todo.md", "scripts/recall/results/")  # drafts, to-do, generated
+SETUP_SKIP = ("cases/_pending/", "cases/history/", "tasks/todo.md", "scripts/recall/results/",
+              "scripts/recall/gate_eval_set.jsonl")  # drafts, to-do, generated; the gate's own false-alarm labels (gatecases.py)
 GIT_TIMEOUT = 20  # seconds for `git status`; on failure the git view is skipped, the edit tools still count
 STATE = os.path.join(tempfile.gettempdir(), "recall-turn")  # per session: the setup's files as they were at his message
 
