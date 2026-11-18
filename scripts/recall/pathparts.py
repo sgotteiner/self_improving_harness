@@ -13,11 +13,11 @@ RENDER = ("The last turns of a session between an owner and his AI assistant; th
           "state is '(not stated)'; never guess.\nWorking on: <what is being worked on> Just done: <what the assistant had just done> "
           "State: <the state it is in now> He asked: <what the owner asks in his newest message, and the situation that made him ask>\n"
           "Reply with that one line only.")
-PROMPT = ("Past mistakes of this assistant, each as a path: the past situation, what the assistant did, what he did not like, and "
-          "the lesson.\n{paths}\n\nThe assistant's latest turn.\nTool calls this turn:\n{tools}\n\nFinal message:\n{text}\n\n"
-          "Does this turn CLEARLY repeat one of these past mistakes (the same kind of action, which he would dislike for the same "
-          "reason)? Be strict: unclear or merely possible -> OK. Reply 'OK' or 'VIOLATION <lesson id> | <one short sentence: what "
-          "is wrong and what to do now>'.")
+JUDGE = ("Past mistakes of this assistant, each with what the assistant did then and what the owner did not like about it.\n"
+         "{paths}\n\nThe assistant's latest turn.\nTool calls this turn:\n{tools}\n\nFinal message:\n{text}\n\n"
+         "Compare only this turn's actions and claims with what the assistant did in each path and what he did not like. Does this "
+         "turn repeat what he disliked in one of them (the same kind of action or claim, which he would dislike for the same reason)? "
+         "Reply 'NONE' or '<path id> | <one sentence: what is repeated>'.")
 
 
 def ask(prompt, tag):
@@ -74,20 +74,16 @@ def at_message(live, sit, exclude):
     return [x for x in s[:N] if x[0] >= CUT]
 
 
-def at_reply(text, tools, did, cands):
-    """The turn's text and tool calls (chunks) vs the DID nodes of the candidate paths only: [(cosine, occ)] above the cutoff."""
-    q = embed.encode(ctx.chunks(text) + ctx.chunks("\n".join(tools)))
-    return [(float((q @ did[o]).max()), o) for _, o in cands if float((q @ did[o]).max()) >= CUT]
-
-
-def decide(text, tools, matched, by_occ):
-    """The brain gets the turn and the matched paths; the lesson id it names (one of those paths') or None."""
-    if not matched:
-        return None
-    block = "\n".join(f"- lesson {p['lesson']}. Past situation: {p['situation']} What the assistant did: {p['did']} What he did not "
-                      f"like: {p['complaint']}" for p in (by_occ[o] for _, o in matched))
-    out = ask(PROMPT.format(paths=block, tools="\n".join(tools) or "(none)", text=text), "pathmech")
+def judge(text, tools, cands, by_occ):
+    """ONE brain call, no embedding: this turn's actions and claims vs the candidate paths' did + his complaint (the situation only
+    picked the candidates). Returns (lesson id of the path repeated | None | '!error', raw answer)."""
+    if not cands:
+        return None, ""
+    block = "\n".join(f"- path {o}. What the assistant did: {by_occ[o]['did']} What he did not like (his words): "
+                      f"{by_occ[o]['complaint']} Lesson: {by_occ[o]['lesson']}" for _, o in cands)
+    out = ask(JUDGE.format(paths=block, tools="\n".join(tools) or "(none)", text=text), "pathjudge")
     if out == "!error":
-        return "!error"
-    cid, _, why = [x.strip(" *`") for x in out[len("VIOLATION"):].partition("|")] if out.startswith("VIOLATION") else (None, 0, "")
-    return cid if cid in {by_occ[o]["lesson"] for _, o in matched} and not ctx.hedged(why) else None
+        return "!error", out
+    pid, _, why = [x.strip(" *`") for x in out.partition("|")]
+    hit = next((by_occ[o]["lesson"] for _, o in cands if pid.replace("path", "").strip() == str(o)), None)
+    return (hit if why else None), out
