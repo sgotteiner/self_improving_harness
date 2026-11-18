@@ -3,11 +3,11 @@
 {"q": "route all claude traffic through a local tool that trims prompts", "case": "proxy-in-request-path"}
 {"q": "I want to spend fewer input tokens, found a gateway that squeezes requests", "case": "proxy-in-request-path"}
 {"q": "let's fill the empty input compression slot", "case": "proxy-in-request-path"}
-{"q": "get claude-mem running, the npx install keeps dying with 127", "case": "installer-exits-127-windows"}
-{"q": "memory plugin install silently does nothing on my windows pc", "case": "installer-exits-127-windows"}
-{"q": "installer said done but the plugin isn't there, try bun maybe", "case": "installer-exits-127-windows"}
-{"q": "claude-mem setup failed again, just run the install one more time", "case": "installer-exits-127-windows"}
-{"q": "add persistent memory across sessions, installer exit code 127", "case": "installer-exits-127-windows"}
+{"q": "get claude-mem running, the npx install keeps dying with 127", "case": ""}
+{"q": "memory plugin install silently does nothing on my windows pc", "case": ""}
+{"q": "installer said done but the plugin isn't there, try bun maybe", "case": ""}
+{"q": "claude-mem setup failed again, just run the install one more time", "case": ""}
+{"q": "add persistent memory across sessions, installer exit code 127", "case": ""}
 {"q": "just rename that function in utils.py, update callers", "case": "missing-why-not-flagged"}
 {"q": "change the timeout in config to 30, file is settings.py", "case": "missing-why-not-flagged"}
 {"q": "delegate this to the implementer: add a retry to fetch()", "case": "missing-why-not-flagged"}
