@@ -5,7 +5,7 @@ import json, os, tempfile, unittest
 from unittest import mock
 
 import helpers as h
-import brain, capowed, capture, capwrite, clean, embed, history, index
+import brain, capowed, capture, capwrite, delegate, clean, embed, history, index
 
 GOOD = {"situation": "refactoring a script, he asked for a test", "did": "skipped it", "disliked": "(not stated)",
         "his_words": "I told you to test", "lesson": "run a test", "slug": "run-a-test"}
@@ -20,13 +20,15 @@ class Capwrite(unittest.TestCase):
             o.start()
             self.addCleanup(o.stop)
 
-    def test_a_detected_correction_gives_the_instruction_and_no_draft_call(self):
+    def test_a_correction_kind_gives_the_write_instruction_sets_the_marker_and_makes_one_call(self):
         tags = []
-        brain.ask = lambda p, system="", tag="": (tags.append(tag), ("YES | skipped the test", 1))[1]
-        out = capture.process("I told you to test", h.transcript([h.user("x"), h.assistant("did it")]))
-        self.assertEqual(tags, ["capture-detect"])
-        self.assertIn("capture.py write", out)
-        self.assertIn("detector's guess", out)
+        brain.ask = lambda p, system="", tag="": (tags.append(tag), ("CORRECTION | skipped the test", 1))[1]
+        tp = h.transcript([h.user("x"), h.assistant("did it"), h.user("I told you to test")])
+        out = delegate.input_step("I told you to test", tp)[0]
+        self.assertEqual(tags, ["delegate-in"])  # no separate capture call
+        self.assertIn("capture.py write", out[0])
+        self.assertIn("skipped the test", out[0])
+        self.assertIn("capture.py write", capowed.settle(tp, False))  # the owed marker was set: the gate asks for the write
 
     def test_write_needs_every_part_accepts_not_stated_and_refuses_a_privacy_hit(self):
         self.assertFalse(capwrite.write({k: v for k, v in GOOD.items() if k != "did"})[0])

@@ -122,15 +122,15 @@ class InputAndSources(unittest.TestCase):
             brain.ask = h.brain_says(word)
             tp = h.transcript([h.user("x"), h.assistant(prev), h.user(prompt)])
             return delegate.input_step(prompt, tp)[0], brain.ask
-        got, ask = say("Done.", "is the retry covered?", "YESNO")
+        got, ask = say("Done.", "is the retry covered?", "QUESTION-YESNO")
         self.assertEqual(len(got), 1)
         self.assertIn("start with yes or no", got[0])
         got, ask = say("Done.", "add a retry to the payment", "TASK")
         self.assertIn("say back what he asked", got[0])
         self.assertIn("run it only after his yes", got[1])  # tests are proposed, not run
-        got, ask = say("I will add a retry so a failed payment is not lost. OK?", "yes", "CONFIRM")
+        got, ask = say("I will add a retry so a failed payment is not lost. OK?", "yes", "CONFIRMATION")
         self.assertIn("delegate it to the implementer", got[0])
-        self.assertIn("I will add a retry", ask.prompts[0])  # the previous assistant turn is in the prompt
+        self.assertIn("I will add a retry", ask.prompts[0])  # the previous full assistant reply is in the prompt
         self.assertEqual(say("x", "hmm", "garbage words")[0], [])  # an unknown answer prints nothing
 
     def test_capture_check_fails_on_a_bad_source(self):

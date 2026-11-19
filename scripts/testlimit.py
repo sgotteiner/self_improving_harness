@@ -77,9 +77,27 @@ def pre(event, slot):
     return dict(inp, command=wrap(cmd, int(slot["seconds"])))
 
 
+def _asked_to_continue(path):
+    """True when the assistant's last text reply is about a cut test (STOP_MSG told it to ask whether to continue)."""
+    try:
+        es = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
+    except (OSError, ValueError):
+        return False
+    for e in reversed(es):
+        c = (e.get("message") or {}).get("content")
+        if e.get("type") == "assistant" and isinstance(c, list):
+            t = "\n".join(b.get("text", "") for b in c if b.get("type") == "text").strip()
+            if t:
+                return bool(re.search(r"\b(test|run|check)", t, re.I) and re.search(r"\b(continue|go on|keep going|again|proceed)\b", t, re.I))
+    return False
+
+
 def prompt(event, slot):
-    """His short yes after a cut run -> approval for that command. Returns the line to show, or None."""
+    """His short yes after a cut run -> approval for that command, only when the assistant's previous reply asked whether
+    to continue the cut test. Returns the line to show, or None."""
     if not slot.get("enabled") or not os.path.exists(STOPPED_FILE) or not YES.match(event.get("prompt", "")):
+        return None
+    if not _asked_to_continue(event.get("transcript_path", "")):
         return None
     h = open(STOPPED_FILE, encoding="utf-8").read().split()[0]
     with open(APPROVED_FILE, "w", encoding="utf-8") as f:

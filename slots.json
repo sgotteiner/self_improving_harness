@@ -8,7 +8,8 @@
     "filler": "codeburn + usage-line mod"
   },
   "recall-hook": {
-    "enabled": true
+    "enabled": false,
+    "about": "off since 2026-11-19, his words: \"i dont want lesson recall ... i dont want that for now and it should have also been mixed with the other on message hooks if anything\". The gate's all-lessons check (output-gate) stays on"
   },
   "code-intelligence": {
     "filler": "pyright-lsp + typescript-lsp"

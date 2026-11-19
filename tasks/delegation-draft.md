@@ -14,29 +14,30 @@ Brain: the same cheap model as the other hooks, one call per step (input: on his
 
 ## Input step (hook.py, on his message): what kind of answer he wants
 
-Placeholders: `{prev}` (the assistant's previous turn, so a confirm and a reply to a question can be told apart), `{prompt}` (his new message).
+Placeholders: `{prev}` (the last few turns, the assistant's previous full reply and its tool calls, so an answer to the assistant's own question and a new question can be told apart), `{prompt}` (his new message). This one call also does mistake capture (the correction kind): there is no separate capture call.
 
 ```text
-The assistant's previous message:
+The last turns and the assistant's previous reply:
 {prev}
 
 The owner's new message: {prompt}
 
-What kind of response does he want? Reply with exactly one word:
-YESNO: he asked a question that a yes or no answers.
-OPEN: he asked a bigger question (why, how, what is, he does not understand, he does not know).
+What kind of message is it? Reply with exactly one word, and for CORRECTION add ` | ` and one sentence naming the assistant's mistake:
+QUESTION-YESNO: a new question from him that a yes or no answers.
+QUESTION-OPEN: a new bigger question (why, how, what is, he does not understand, he does not know).
 TASK: he asked the assistant to do or change something.
-CONFIRM: a short yes / ok / go ahead that answers the assistant's previous message saying back a task and asking him to confirm. A yes to any other question is YESNO or TALK, not CONFIRM.
 TALK: he shares thoughts, consults, comments, or says thanks; nothing is asked or to be done.
+CONFIRMATION: a short reply that answers or finalises the assistant's own question or proposal (a yes, ok, go ahead, a choice between its options, the final wording of what it proposed). Never a question, even when it has the form of one.
+CORRECTION: he says the assistant got something wrong or did not follow him: "I told you", "that's not what I asked", "why did you", an ignored instruction, a missed point (how it behaved, not what it built).
 When unsure between TASK and anything else, pick the one that makes the assistant ask before acting.
 ```
 
-Instruction lines attached to the main session's context (the brain's word picks one; TASK and CONFIRM also get the TESTS line):
+Instruction lines attached to the main session's context (the brain's word picks one; TASK and CONFIRMATION also get the TESTS line; CORRECTION prints capture's write instruction from capwrite.py, not a line here):
 
-- YESNO: He asked a yes/no question: start with yes or no, then one or two lines of why. Don't run, change or delegate anything.
-- OPEN: He asked a question: answer it fully from what you already know. Don't run, change or delegate anything.
+- QUESTION-YESNO: He asked a yes/no question: start with yes or no, then one or two lines of why. Don't run, change or delegate anything.
+- QUESTION-OPEN: He asked a question: answer it fully from what you already know. Don't run, change or delegate anything.
 - TASK: He asked you to do something: first say back what he asked and how it helps him, and ask him to confirm. Don't start or delegate until he says yes.
-- CONFIRM: He confirmed the task you said back: delegate it to the implementer now, with Why, task, paths and the test command.
+- CONFIRMATION: He confirmed the task you said back: delegate it to the implementer now, with Why, task, paths and the test command.
 - TALK: He is talking it through: give your feedback and opinion. Don't act.
 - TESTS: Tests: propose only a check for what failed, what may fail or what he asked, with the failure it prevents in one line; run it only after his yes.
 

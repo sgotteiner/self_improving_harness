@@ -23,7 +23,7 @@ class Quiet(Env):
         out = io.StringIO()
         with mock.patch.object(ctx, "enabled", side_effect=lambda s: s in ("capture", "decision-capture")), \
                 mock.patch.object(sys, "stdin", io.StringIO(json.dumps({"prompt": prompt, "transcript_path": tp}))), mock.patch.object(sys, "stdout", out), \
-                mock.patch("capture.process", return_value=None), mock.patch("decisions.process", return_value=None):
+                mock.patch("delegate.input_step", return_value=([], 0)), mock.patch("decisions.process", return_value=None):
             hook.main()
         return out.getvalue()
 

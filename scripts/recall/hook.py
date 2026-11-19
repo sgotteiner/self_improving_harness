@@ -75,23 +75,21 @@ def main():
     if ctx.enabled("delegation-hook"):  # first: the setup as it is at his message, before any slow stage; off until approved
         stage("delegation-snapshot", lambda: __import__("setupstate").save_snapshot(tp), None)
     cap = ctx.enabled("capture")
-    drafted = None
-    if cap:  # the brain only detects; the instruction line makes the session write the case itself
-        drafted = stage("capture", lambda: __import__("capture").process(prompt, tp), None)
+    kind_lines, drafted = [], None
+    if ctx.enabled("delegation-hook"):  # one call: his kind of message; a correction (slot capture) makes the session write the case
+        kind_lines = stage("delegation", lambda: __import__("delegate").input_step(prompt, tp)[0], [])
+        drafted = next((l for l in kind_lines if l.startswith("Capture:")), None)
     if ctx.enabled("decision-capture"):  # diary drafts: collected silently, like captured mistakes
         if drafted:  # the same message was a correction of his assistant, not a design decision
             ctx.log("hook: decision detection skipped, mistake capture asked the session to write a case")
         else:
             stage("decisions", lambda: __import__("decisions").process(prompt, tp), None)
     out = stage("vision", lambda: __import__("vision").lines(), [])  # VISION.md first, like a rule, on every human message
-    if drafted:
-        out.append(drafted)
     if cap or ctx.enabled("decision-capture"):  # at most one line a day, on the first message: how many drafts wait
         out += stage("drafts", lambda: __import__("drafts").daily_line(), [])
     if ctx.enabled("project-check"):  # first message of a session: the project's documents against the setup's rules
         out += stage("project-check", lambda: __import__("projcheck").first_message(tp, d.get("cwd", "")), [])
-    if ctx.enabled("delegation-hook"):  # off until the owner approves tasks/delegation-draft.md
-        out += stage("delegation", lambda: __import__("delegate").input_step(prompt, tp)[0], [])
+    out += kind_lines
     if ctx.enabled("recall-hook") and len(prompt.split()) >= 3:
         out += stage("recall", lambda: recall(prompt, tp), [])
     elif not out:

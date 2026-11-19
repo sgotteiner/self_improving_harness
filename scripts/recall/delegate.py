@@ -1,6 +1,6 @@
 """Delegation by hooks. Two cheap-model steps:
   input_step (slot `delegation-hook`): on his message -> what kind of response he wants (yes/no, full answer, task to say
-  back, confirm of that task, talk) and the one instruction line for it.
+  back, talk, confirmation, correction of the assistant) and the one instruction line for it.
   output_step (slot `delegation-gate`, off): before the reply -> did the turn skip a delegation the core rules require (tester, reviewer,
   knowledge-manager)?
 The rules are read from CLAUDE.md at run time (the section "The core"), and the prompt wordings from
@@ -15,7 +15,8 @@ from delegvet import veto
 CLAUDE_MD = os.path.join(ctx.ROOT, "CLAUDE.md")
 DRAFT = os.path.join(ctx.ROOT, "tasks", "delegation-draft.md")
 SLOT = "delegation-gate"  # the output step; the input step runs under `delegation-hook`
-INPUT_KINDS = ("YESNO", "OPEN", "TASK", "CONFIRM", "TALK")
+INPUT_KINDS = ("QUESTION-YESNO", "QUESTION-OPEN", "TASK", "TALK", "CONFIRMATION", "CORRECTION")
+LINE_KINDS = tuple(k for k in INPUT_KINDS if k != "CORRECTION")  # CORRECTION's line is capwrite.instruction
 BLOCK_KINDS = ("TESTER", "TESTER-HERE", "REVIEWER", "KNOWLEDGE-MANAGER", "LOOP", "SETUP-MANAGER")
 
 
@@ -61,15 +62,25 @@ def _fill(template, **kw):
 
 
 def input_step(prompt, transcript):
-    """-> ([the one instruction line for his kind of message, plus the tests line for a task], tokens)."""
+    """-> ([the one instruction line for his kind of message, plus the tests line for a task], tokens). One call also
+    detects a correction (slot `capture`): that kind prints capture's write instruction and sets the owed marker."""
     import brain
-    prev = ctx.last_turn(transcript, prompt.strip())[0][-1500:] if transcript else ""
-    out, tok = brain.ask(_fill(_prompt("Input step"), prev=prev or "(none)", prompt=prompt), tag="delegate-in")
-    lines = _lines("Instruction lines attached")
-    kind = re.sub(r"[^A-Z]", "", (out.split() or [""])[0].upper())
+    reply, tools = ctx.last_turn(transcript, prompt.strip()) if transcript else ("", [])
+    recent = [l for l in (ctx.recent(transcript, 5) if transcript else []) if l != "Owner: " + prompt.strip()][-4:]
+    recent = "\n".join(l[:600] for l in recent)  # his new message may already be in the transcript: left out
+    prev = f"{recent}\n\nThe assistant's previous full reply:\n{reply[-4000:] or '(none)'}\nIts tool calls: {'; '.join(tools) or 'none'}"
+    out, tok = brain.ask(_fill(_prompt("Input step"), prev=prev, prompt=prompt), tag="delegate-in")
+    m = re.match(r"\W*([A-Z]+(?:-[A-Z]+)?)", out.upper())
+    kind = m.group(1) if m else ""
     if kind not in INPUT_KINDS:
         return [], tok
-    return [lines[kind]] + ([lines["TESTS"]] if kind in ("TASK", "CONFIRM") else []), tok
+    if kind == "CORRECTION":
+        if not ctx.enabled("capture") or not reply.strip():
+            return [], tok
+        import capwrite
+        return [capwrite.instruction(out.partition("|")[2].strip() or "not specified", transcript, prompt)], tok
+    lines = _lines("Instruction lines attached")
+    return [lines[kind]] + ([lines["TESTS"]] if kind in ("TASK", "CONFIRMATION") else []), tok
 
 
 def output_step(transcript, root=ctx.ROOT):
@@ -112,7 +123,7 @@ def check_sources():
                       ("draft prompt 'Input step'", lambda: _need(_prompt("Input step"), ("prev", "prompt"))),
                       ("draft prompt 'Output step'", lambda: _need(_prompt("Output step"), ("rules", "human", "tools", "text",
                                                                                               "facts", "max_rounds"))),
-                      ("draft 'Instruction lines attached'", lambda: _keys(_lines("Instruction lines attached"), INPUT_KINDS + ("TESTS",))),
+                      ("draft 'Instruction lines attached'", lambda: _keys(_lines("Instruction lines attached"), LINE_KINDS + ("TESTS",))),
                       ("draft 'Block reasons'", lambda: _keys(_lines("Block reasons"), BLOCK_KINDS))):
         try:
             fn()
