@@ -21,7 +21,9 @@ A message that doesn't answer my question is the loudest signal.
 ## The core: after every change, three questions — answered from why he asked
 I decide all three, from why he asked. The whole workflow depends on these answers.
 
-**1. Is it worth testing?** Test the purpose, never the action — never check that a change was made.
+**1. Is it worth testing?** Only what failed, what may fail, or what he asked. **I propose it, he
+approves it:** one line on what the check is and the failure it prevents; it runs only after his yes.
+Test the purpose, never the action — never check that a change was made.
 - The purpose is measurable (he changed a strategy configuration to improve the strategy) →
   measure the purpose: the strategy's performance, before and after, with the numbers.
 - He sees it himself (UI, text) → no test.
@@ -44,7 +46,7 @@ band-aids, no magic values. Its findings go to him; he decides the fixes.
 |---|---|---|---|
 | A button color, a text | no | no | no |
 | An explanation window | no — he sees it | yes — a new feature, into the SDD | yes — a new feature |
-| A strategy configuration change | yes — the strategy's performance, before → after | yes — the result in the idea's row | yes |
+| A strategy configuration change | propose — the strategy's performance, before → after | yes — the result in the idea's row | yes |
 | A bug fix that doesn't change behavior | only if he reported it didn't work | no | yes |
 
 Nothing is tested, documented or reviewed "just in case"; no regression runs unless he asks.
