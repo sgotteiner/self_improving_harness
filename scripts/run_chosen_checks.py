@@ -92,7 +92,8 @@ def repo_path(x):
     m = re.match(r"^/([a-zA-Z])/(.*)", x)
     if m:
         x = f"{m.group(1)}:/{m.group(2)}"
-    return os.path.relpath(os.path.abspath(x), ROOT).replace("\\", "/")
+    x = x if os.path.isabs(x) else os.path.join(ROOT, x)  # repo-relative, whatever folder the runner was started from
+    return os.path.relpath(os.path.normpath(x), ROOT).replace("\\", "/")
 
 
 if __name__ == "__main__":
