@@ -36,13 +36,29 @@ def candidates(text, tools, exclude=()):
     return [(s, c, None) for s, c in retrieve.search(q, 6, "emb", skip=exclude)]
 
 
+def check_all(tp, text, tools):
+    """Slot recall-all-lessons: one call with every lesson; [(id, why)] of each clearly broken one, or None."""
+    import alllessons as al, brain
+    ls = al.lessons()
+    out, tok = brain.ask(al.GATE.format(lessons=al.block(ls), tools="\n".join(tools) or "(none)", text=text), tag="gate-all")
+    found = al.named(out, ls, "VIOLATION")
+    for cid, why in found:
+        verdicts.log(tp, "lesson", "BLOCK", cid, ctx.hedged(why), tokens=tok)
+    if not found:
+        verdicts.log(tp, "lesson", "OK", tokens=tok)
+    return found or None
+
+
 def check(tp, exclude=()):
+    """[(case id, why)] of every violated case, or None. exclude (evals only) keeps the embedding path, which can hold out."""
     import brain, graph, index
     text, tools = ctx.last_turn(tp)
     if not text.strip():
         ctx.log("gate: no assistant text in the last turn")
         verdicts.log(tp, "lesson", "OK", skip="no assistant text")
         return None
+    if ctx.enabled("recall-all-lessons") and not exclude:
+        return check_all(tp, text, tools)
     hits = [h for h in candidates(text, tools, exclude) if h[0] >= ctx.RELEVANCE_MIN]
     if not hits:
         ctx.log("gate: no case above the relevance cutoff")
@@ -55,7 +71,7 @@ def check(tp, exclude=()):
         cid, _, why = [x.strip(" *`") for x in out[len("VIOLATION"):].partition("|")]
         if cid in metas:
             verdicts.log(tp, "lesson", "BLOCK", cid, ctx.hedged(why), tokens=tok)
-            return cid, why
+            return [(cid, why)]
     verdicts.log(tp, "lesson", "OK", tokens=tok)
     return None
 
@@ -93,13 +109,12 @@ def main():
         ctx.log(f"gate: capture check failed: {e!r}")
     if d.get("stop_hook_active"):
         return
-    r = check(tp)  # both checks always run, so one block carries every reason (a block from one never hides the other)
+    found = check(tp) or []  # both checks always run, so one block carries every reason (a block from one never hides the other)
     reasons = []
-    if r and ctx.hedged(r[1]):
-        ctx.log(f"gate: violation of cases/{r[0]}.md dropped, its own reason hedges: {r[1]}")
-        r = None
-    if r:
-        cid, why = r
+    for cid, why in found:
+        if ctx.hedged(why):
+            ctx.log(f"gate: violation of cases/{cid}.md dropped, its own reason hedges: {why}")
+            continue
         rec = (f" Then record this occurrence, you have the context: `python -I scripts/recall/capture.py write <json file>` with "
                f"{{source: \"gate\", lesson_id: \"{cid}\", situation, did, disliked = the gate's reason above}}; an unknown part "
                "is \"(not stated)\", never a guess." if ctx.enabled("capture") else "")

@@ -26,7 +26,7 @@ class VerdictLog(unittest.TestCase):
         with mock.patch.object(retrieve, "search", return_value=[(0.9, "c1")]), mock.patch.object(index, "meta", return_value=meta), \
                 mock.patch.object(ctx, "enabled", lambda slot: False):  # this is the flat path; the graph path is tested in test_graph
             brain.ask = lambda p, system="", tag="": ("VIOLATION c1 | This may be OK, no run shown", 7)
-            self.assertEqual(gate.check(tp), ("c1", "This may be OK, no run shown"))
+            self.assertEqual(gate.check(tp), [("c1", "This may be OK, no run shown")])
             brain.ask = lambda p, system="", tag="": ("OK", 5)
             self.assertIsNone(gate.check(tp))
         with mock.patch.object(retrieve, "search", return_value=[]), mock.patch.object(ctx, "enabled", lambda slot: False):

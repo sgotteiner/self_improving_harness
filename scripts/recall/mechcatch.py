@@ -22,7 +22,7 @@ def run(turns, arm, workers=16):
         for _ in range(2):  # a transient failure of the cheap model is retried once
             try:
                 r = gate.check(t["tp"], ex(t))
-                return r[0] if r else None
+                return r[0][0] if r else None
             except Exception as e:
                 err = e
         ctx.log(f"eval_mechanism: gate check failed twice: {err!r}")

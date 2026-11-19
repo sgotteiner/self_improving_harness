@@ -13,6 +13,10 @@
   "code-intelligence": {
     "filler": "pyright-lsp + typescript-lsp"
   },
+  "recall-all-lessons": {
+    "enabled": true,
+    "about": "the cheap model (brain.ask) sees ALL approved lessons on every call, in recall-hook (his message) and output-gate (the turn), and names those that apply, any number; only those reach the main session. Off = embedding search of candidates (retrieve.py/graph.py) plus the second filter, for when the lessons are too many to send each time (alllessons.LESSONS_MAX is the size warning)"
+  },
   "output-gate": {
     "enabled": true
   },

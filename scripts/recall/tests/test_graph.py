@@ -63,9 +63,9 @@ class Graph(unittest.TestCase):
         tp = h.transcript([h.user("x"), h.assistant("It said the fix works without running any test this turn.")])
         seen = []
         ask = lambda prompt, system="", tag="": (seen.append(prompt), ("VIOLATION claims | no run shown", 3))[1]
-        with mock.patch.dict(os.environ, {"RECALL_VERDICT_LOG": os.path.join(self.d, "v.jsonl")}), mock.patch.object(ctx, "enabled", lambda slot: True), \
+        with mock.patch.dict(os.environ, {"RECALL_VERDICT_LOG": os.path.join(self.d, "v.jsonl")}), mock.patch.object(ctx, "enabled", lambda slot: slot != "recall-all-lessons"), \
                 mock.patch.object(brain, "ask", ask), mock.patch.object(index, "meta", return_value=("2026-11-01", "s", "l", "r")):
-            self.assertEqual(gate.check(tp), ("claims", "no run shown"))
+            self.assertEqual(gate.check(tp), [("claims", "no run shown")])
         self.assertIn("A success claim with no run behind it", seen[0])
         self.assertIn("It said the fix works without running any test this turn", seen[0])
 

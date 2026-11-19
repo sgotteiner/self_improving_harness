@@ -22,7 +22,17 @@ def candidates(q):
     return [(s, c, None) for s, c in retrieve.search(q, 8, "emb")]
 
 
+def recall_all(prompt, transcript):
+    """Slot recall-all-lessons: one call, the situation and every lesson; the model names those that apply."""
+    import alllessons as al, brain
+    ls = al.lessons()
+    out, _ = brain.ask(al.RECALL.format(ctx="\n".join(ctx.recent(transcript, 4)), prompt=prompt, lessons=al.block(ls)), tag="recall-all")
+    return [f"Related past case (cases/{c}.md, {ls[c][0]}): {why} Lesson: {ls[c][1]} Right: {ls[c][2]}" for c, why in al.named(out, ls)]
+
+
 def recall(prompt, transcript):
+    if ctx.enabled("recall-all-lessons"):
+        return recall_all(prompt, transcript)
     import brain, graph, index
     sit, _ = brain.ask(STEP1.format(ctx="\n".join(ctx.recent(transcript, 4)), prompt=prompt), tag="recall-1")
     hits = [h for h in candidates(ctx.chunks(sit + "\n" + prompt)) if h[0] >= ctx.RELEVANCE_MIN]
