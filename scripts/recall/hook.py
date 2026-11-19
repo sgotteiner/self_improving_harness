@@ -74,7 +74,6 @@ def main():
         return
     if ctx.enabled("delegation-hook"):  # first: the setup as it is at his message, before any slow stage; off until approved
         stage("delegation-snapshot", lambda: __import__("setupstate").save_snapshot(tp), None)
-    cap = ctx.enabled("capture")
     kind_lines, drafted = [], None
     if ctx.enabled("delegation-hook"):  # one call: his kind of message; a correction (slot capture) makes the session write the case
         kind_lines = stage("delegation", lambda: __import__("delegate").input_step(prompt, tp)[0], [])
@@ -85,8 +84,6 @@ def main():
         else:
             stage("decisions", lambda: __import__("decisions").process(prompt, tp), None)
     out = stage("vision", lambda: __import__("vision").lines(), [])  # VISION.md first, like a rule, on every human message
-    if cap or ctx.enabled("decision-capture"):  # at most one line a day, on the first message: how many drafts wait
-        out += stage("drafts", lambda: __import__("drafts").daily_line(), [])
     if ctx.enabled("project-check"):  # first message of a session: the project's documents against the setup's rules
         out += stage("project-check", lambda: __import__("projcheck").first_message(tp, d.get("cwd", "")), [])
     out += kind_lines

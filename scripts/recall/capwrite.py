@@ -84,18 +84,16 @@ def write(d):
         history.record(_find(lid), src, raw, clean_text=c)
         capowed.pay(src)
         return True, f"occurrence recorded on {lid}"
-    q, slug = pending.q, pending.slugify(d["slug"], "captured-mistake")
-    path = os.path.join(PENDING, slug + ".md")
-    os.makedirs(PENDING, exist_ok=True)
+    slug = pending.slugify(d["slug"], "captured-mistake")
+    if d.get("approved") is not True:  # no drafts: only his yes adds a lesson
+        capowed.pay(src)
+        return True, ("Ask him in your reply, with the exact lesson line; only his yes adds it: rerun with \"approved\": true. "
+                      f"Lesson: {d['lesson']}")
+    q, path = pending.q, os.path.join(index.CASES, slug + ".md")
     open(path, "w", encoding="utf-8").write(
-        f"---\nid: {slug}\ndate: {datetime.date.today()}\nsource: written by the session\nstatus: pending\nasked: false\n"
-        f"level: advice\nhis_words: {q(raw)}\nsituation:\n  - {q(d['situation'])}\nwrong: {q(d['did'])}\n"
-        f"right: {q('(not stated)')}\nlesson: {q(d['lesson'])}\nreplay: {q('(not stated)')}\npass_if:\n  - {q('(not stated)')}\n"
-        "occurrences: 0\n---\n")
+        f"---\nid: {slug}\ndate: {datetime.date.today()}\nlevel: advice\nhis_words: {q(raw)}\nsituation:\n  - {q(d['situation'])}\n"
+        f"wrong: {q(d['did'])}\nright: {q('(not stated)')}\nlesson: {q(d['lesson'])}\nreplay: {q('(not stated)')}\n"
+        f"pass_if:\n  - {q('(not stated)')}\noccurrences: 0\n---\n")
     history.record(path, src, raw, clean_text=c)
     capowed.pay(src)
-    try:
-        pending.todo_add(f"- [ ] review captured case `{slug}` (cases/_pending/{slug}.md): add, edit or discard")
-    except OSError as e:
-        ctx.log(f"capture: todo not updated: {e!r}")
-    return True, f"pending case written: cases/_pending/{slug}.md"
+    return True, f"case written: cases/{slug}.md"

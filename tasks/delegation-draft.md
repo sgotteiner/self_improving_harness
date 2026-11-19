@@ -30,15 +30,20 @@ TALK: he shares thoughts, consults, comments, or says thanks; nothing is asked o
 CONFIRMATION: a short reply that answers or finalises the assistant's own question or proposal (a yes, ok, go ahead, a choice between its options, the final wording of what it proposed). Never a question, even when it has the form of one.
 CORRECTION: he says the assistant got something wrong or did not follow him: "I told you", "that's not what I asked", "why did you", an ignored instruction, a missed point (how it behaved, not what it built).
 When unsure between TASK and anything else, pick the one that makes the assistant ask before acting.
+Then, on a second line, the flags that apply (or NONE):
+DONE: his message says something is done, finished or settled.
+UNANSWERED: the assistant's previous reply suggested or asked something that his message does not answer.
 ```
 
-Instruction lines attached to the main session's context (the brain's word picks one; TASK and CONFIRMATION also get the TESTS line; CORRECTION prints capture's write instruction from capwrite.py, not a line here):
+Instruction lines attached to the main session's context (the brain's word picks one; TASK and CONFIRMATION also get the TESTS line; CORRECTION prints capture's write instruction from capwrite.py, not a line here; the flags DONE and UNANSWERED add their line to any kind):
 
 - QUESTION-YESNO: He asked a yes/no question: start with yes or no, then one or two lines of why. Don't run, change or delegate anything.
 - QUESTION-OPEN: He asked a question: answer it fully from what you already know. Don't run, change or delegate anything.
 - TASK: He asked you to do something: first say back what he asked and how it helps him, and ask him to confirm. Don't start or delegate until he says yes.
 - CONFIRMATION: He confirmed the task you said back: delegate it to the implementer now, with Why, task, paths and the test command.
 - TALK: He is talking it through: give your feedback and opinion. Don't act.
+- DONE: He says it's done: in this reply, propose the SDD edit — what changed, shown as the change to the doc. Only after his yes, the knowledge-manager writes it. For ideas, diary or flags: ask him only if something belongs there, with the exact line.
+- UNANSWERED: Your suggestion in the previous reply was not answered: it's a no. Don't repeat it and don't save it anywhere.
 - TESTS: Tests: propose only a check for what failed, what may fail or what he asked, with the failure it prevents in one line; run it only after his yes.
 
 ## Output step (gate.py, before the reply)

@@ -25,7 +25,7 @@
     "enabled": true
   },
   "decision-capture": {
-    "enabled": true,
+    "enabled": false,
     "about": "on his message a cheap model detects a design decision and drafts a diary entry into diary-pending/ (local, never pushed); asked once at the next message; his yes -> decisions.py approve appends it to the project's diary (append-only)"
   },
   "flags-capture": {

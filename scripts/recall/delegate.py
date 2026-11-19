@@ -75,17 +75,18 @@ def input_step(prompt, transcript):
     if kind not in INPUT_KINDS:
         return [], tok
     try:  # for the gate's context; a write failure must not lose the instruction
-        import gatectx
-        gatectx.save_kind(transcript, prompt, kind)
+        __import__("gatectx").save_kind(transcript, prompt, kind)
     except OSError as e:
         ctx.log(f"delegate: kind not stored: {e!r}")
+    lines = _lines("Instruction lines attached")
+    rest = out.upper().partition("|" if kind == "CORRECTION" else kind)[2]
+    extra = [lines[f] for f in ("DONE", "UNANSWERED") if re.search(r"\b" + f + r"\b", rest)]  # done -> SDD edit; ignored -> a no
     if kind == "CORRECTION":
         if not ctx.enabled("capture") or not reply.strip():
-            return [], tok
+            return extra, tok
         import capwrite
-        return [capwrite.instruction(out.partition("|")[2].strip() or "not specified", transcript, prompt)], tok
-    lines = _lines("Instruction lines attached")
-    return [lines[kind]] + ([lines["TESTS"]] if kind in ("TASK", "CONFIRMATION") else []), tok
+        return [capwrite.instruction(out.partition("|")[2].strip() or "not specified", transcript, prompt)] + extra, tok
+    return [lines[kind]] + ([lines["TESTS"]] if kind in ("TASK", "CONFIRMATION") else []) + extra, tok
 
 
 def output_step(transcript, root=ctx.ROOT):
@@ -128,7 +129,7 @@ def check_sources():
                       ("draft prompt 'Input step'", lambda: _need(_prompt("Input step"), ("prev", "prompt"))),
                       ("draft prompt 'Output step'", lambda: _need(_prompt("Output step"), ("rules", "human", "tools", "text",
                                                                                               "facts", "max_rounds"))),
-                      ("draft 'Instruction lines attached'", lambda: _keys(_lines("Instruction lines attached"), LINE_KINDS + ("TESTS",))),
+                      ("draft 'Instruction lines attached'", lambda: _keys(_lines("Instruction lines attached"), LINE_KINDS + ("TESTS", "DONE", "UNANSWERED"))),
                       ("draft 'Block reasons'", lambda: _keys(_lines("Block reasons"), BLOCK_KINDS))):
         try:
             fn()
