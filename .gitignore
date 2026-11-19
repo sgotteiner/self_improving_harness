@@ -60,3 +60,5 @@ _discarded/
 /scripts/recall/results/mech_cache.jsonl
 /scripts/recall/results/capture_owed.json
 /scripts/recall/results/paths_v2.jsonl
+# the message step's detected type, with his message text: local only
+/scripts/recall/results/kind-*.txt
