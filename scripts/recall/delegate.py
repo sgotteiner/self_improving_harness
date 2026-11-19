@@ -74,6 +74,11 @@ def input_step(prompt, transcript):
     kind = m.group(1) if m else ""
     if kind not in INPUT_KINDS:
         return [], tok
+    try:  # for the gate's context; a write failure must not lose the instruction
+        import gatectx
+        gatectx.save_kind(transcript, prompt, kind)
+    except OSError as e:
+        ctx.log(f"delegate: kind not stored: {e!r}")
     if kind == "CORRECTION":
         if not ctx.enabled("capture") or not reply.strip():
             return [], tok

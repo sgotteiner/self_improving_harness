@@ -40,7 +40,10 @@ def check_all(tp, text, tools):
     """Slot recall-all-lessons: one call with every lesson; [(id, why)] of each clearly broken one, or None."""
     import alllessons as al, brain
     ls = al.lessons()
-    out, tok = brain.ask(al.GATE.format(lessons=al.block(ls), tools="\n".join(tools) or "(none)", text=text), tag="gate-all")
+    import gatectx
+    msg, prev, kind = gatectx.around(tp)
+    out, tok = brain.ask(al.GATE.format(lessons=al.block(ls), prev=prev, message=msg, kind=kind,
+                                        tools="\n".join(tools) or "(none)", text=text), tag="gate-all")
     found = al.named(out, ls, "VIOLATION")
     for cid, why in found:
         verdicts.log(tp, "lesson", "BLOCK", cid, ctx.hedged(why), tokens=tok)

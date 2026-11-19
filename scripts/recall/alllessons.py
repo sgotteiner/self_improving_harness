@@ -12,10 +12,14 @@ RECALL = ("Recent turns of a coding session:\n{ctx}\n\nOwner's new message: {pro
           "assistant:\n{lessons}\n\nWhich lessons clearly apply to what is going on now, so that repeating the old mistake is a real "
           "risk? Any number, none is fine. Be strict: when unsure, leave it out. Reply 'NONE' or one line per lesson that applies: "
           "<id> | <why it applies, one factual sentence>.")
-GATE = ("Lessons from earlier mistakes of this assistant:\n{lessons}\n\nThe assistant's latest turn.\nTool calls this turn:\n{tools}"
-        "\n\nFinal message:\n{text}\n\nWhich lessons does this turn CLEARLY violate (e.g. claims something works or is done with no "
-        "run of a test or the app in the tool calls)? Be strict: unclear or merely possible -> not a violation. Reply 'OK' or one "
-        "line per clearly broken lesson: 'VIOLATION <id> | <one short sentence: what is wrong and what to do now>'.")
+GATE = ("Lessons from earlier mistakes of this assistant:\n{lessons}\n\nContext.\nThe assistant's previous reply (before the owner's "
+        "message):\n{prev}\n\nThe owner's message: {message}\nThe kind the message step detected for it: {kind}\n\n"
+        "The assistant's latest turn, the one to judge.\nTool calls this turn:\n{tools}"
+        "\n\nFinal message:\n{text}\n\nEvidence from the previous reply or from output the owner already saw (e.g. the message "
+        "step's own output) counts, not only this turn's tool calls. Judge whether the turn answered what he asked against his "
+        "actual message and its kind. Which lessons does this turn CLEARLY violate (e.g. claims something works or is done with no "
+        "run of a test or the app in the tool calls or the context)? Be strict: unclear or merely possible -> not a violation. Reply "
+        "'OK' or one line per clearly broken lesson: 'VIOLATION <id> | <one short sentence: what is wrong and what to do now>'.")
 
 
 def lessons():
