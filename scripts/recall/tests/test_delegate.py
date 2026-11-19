@@ -117,13 +117,21 @@ class Verdicts(unittest.TestCase):
 
 
 class InputAndSources(unittest.TestCase):
-    def test_a_question_is_never_knowledge_manager(self):
-        brain.ask = h.brain_says("NONE")
-        self.assertEqual(delegate.input_step("is the sdd also updated?", "")[0], [])
-        brain.ask = h.brain_says("KNOWLEDGE-MANAGER | he says it is done")
-        self.assertEqual(len(delegate.input_step("done, looks right. is the retry path also covered?", "")[0]), 1)  # done AND a question
-        self.assertNotIn('"?" in prompt', open(delegate.__file__, encoding="utf-8").read())  # no code filter on question marks
-        self.assertIn("also asks something still counts", open(delegate.DRAFT, encoding="utf-8").read())  # the draft says it
+    def test_the_intent_step_prints_the_instruction_for_his_kind_of_message(self):
+        def say(prev, prompt, word):
+            brain.ask = h.brain_says(word)
+            tp = h.transcript([h.user("x"), h.assistant(prev), h.user(prompt)])
+            return delegate.input_step(prompt, tp)[0], brain.ask
+        got, ask = say("Done.", "is the retry covered?", "YESNO")
+        self.assertEqual(len(got), 1)
+        self.assertIn("start with yes or no", got[0])
+        got, ask = say("Done.", "add a retry to the payment", "TASK")
+        self.assertIn("say back what he asked", got[0])
+        self.assertIn("run it only after his yes", got[1])  # tests are proposed, not run
+        got, ask = say("I will add a retry so a failed payment is not lost. OK?", "yes", "CONFIRM")
+        self.assertIn("delegate it to the implementer", got[0])
+        self.assertIn("I will add a retry", ask.prompts[0])  # the previous assistant turn is in the prompt
+        self.assertEqual(say("x", "hmm", "garbage words")[0], [])  # an unknown answer prints nothing
 
     def test_capture_check_fails_on_a_bad_source(self):
         import casesave, index

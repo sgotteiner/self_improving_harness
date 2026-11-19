@@ -4,7 +4,7 @@ Why: he does not want the delegation to depend on the main session's memory. The
 to delegate when he writes; the output gate blocks the reply when the turn skipped a delegation the core rules require.
 The main session starts the agent itself, so the result comes back into the conversation.
 
-Status: code written, switch `delegation-hook` in `slots.json` is OFF. Nothing runs until he approves this wording and
+Status: switch `delegation-hook` (the input step above) is on; the output step runs only while the switch `delegation-gate` is on (off since 2026-11-19: the gate compares the work with his lessons only). Nothing runs until he approves this wording and
 the switch is turned on. The code reads the two prompts and the instruction lines from THIS file (the fenced blocks and
 the bullet list below), so what he approves here is exactly what runs. The rules themselves are not copied here:
 `{rules}` is filled at run time with the section "The core: after every change, three questions" of
@@ -12,36 +12,33 @@ the bullet list below), so what he approves here is exactly what runs. The rules
 
 Brain: the same cheap model as the other hooks, one call per step (input: on his message; output: before the reply).
 
-## Input step (hook.py, on his message)
+## Input step (hook.py, on his message): what kind of answer he wants
 
-Placeholders: `{rules}`, `{ctx}` (the last 4 turns), `{prompt}` (his new message).
+Placeholders: `{prev}` (the assistant's previous turn, so a confirm and a reply to a question can be told apart), `{prompt}` (his new message).
 
 ```text
-The rules of this setup (the core of its CLAUDE.md):
-{rules}
-
-Recent conversation:
-{ctx}
+The assistant's previous message:
+{prev}
 
 The owner's new message: {prompt}
 
-Does his message call for one of these delegations, by the rules above?
-KNOWLEDGE-MANAGER: he STATES that a feature or change is done, finished, or accepted as complete, and the system changed (a feature added, removed or changed). Never for a message that only asks a question ("is the sdd also updated?": NONE); a message that says it is done AND also asks something still counts (the code does not filter questions: the wording decides).
-TEST: he says something does not work, is still broken, or did not change.
-IMPLEMENTER: he approves a specific change to be made now (picks an option, says go ahead, yes do it).
-SDD-ASK: he approved a finished feature or change (said it is good, nice, ok, accepted, looks right) but did NOT say it is done, the system changed, and the recent conversation does not already hold the line "SDD: update the SDD for". Reply 'SDD-ASK | <the feature in plain words> | <what changed, short>'.
-A yes to the line "SDD: update the SDD for ...?" that the assistant's last message asked is KNOWLEDGE-MANAGER; any other answer to it is NONE.
-Never IMPLEMENTER for an answer about a diary draft ("Diary ...: Add it?": yes, keep, add it, discard): that answer is NONE.
-Anything else is NONE: a question, a request for an explanation, a discussion, planning, thanks, a color or a text change. Be strict: when unsure, NONE.
-Reply 'NONE' or one line: <KNOWLEDGE-MANAGER|TEST|IMPLEMENTER> | <what changed or what he wants, one short factual sentence>.
+What kind of response does he want? Reply with exactly one word:
+YESNO: he asked a question that a yes or no answers.
+OPEN: he asked a bigger question (why, how, what is, he does not understand, he does not know).
+TASK: he asked the assistant to do or change something.
+CONFIRM: a short yes / ok / go ahead that answers the assistant's previous message saying back a task and asking him to confirm. A yes to any other question is YESNO or TALK, not CONFIRM.
+TALK: he shares thoughts, consults, comments, or says thanks; nothing is asked or to be done.
+When unsure between TASK and anything else, pick the one that makes the assistant ask before acting.
 ```
 
-Instruction lines attached to the main session's context (the fixed part; the brain's sentence is appended after "Context:"):
+Instruction lines attached to the main session's context (the brain's word picks one; TASK and CONFIRM also get the TESTS line):
 
-- KNOWLEDGE-MANAGER: Delegation (core rule 2): he says it is done. Before telling him it is done, call the knowledge-manager yourself (so its result comes back here) with what changed and his words: it updates only what the change touched: the SDD, tests if what is measured changed, the idea's row, and the project's maps per the system-map skill's update procedure.
-- TEST: Delegation (core rule 1): he says it does not work. Test it from his entry point, the way he sees it, before saying it is fixed.
-- IMPLEMENTER: Delegation: he approved a change. Delegate it to the implementer (start it yourself) with Why, task, paths and the test command.
-- SDD-ASK: The owner approved a finished feature without saying done. Ask him once, in this one line, nothing more: "{question}". If he answers yes, call the knowledge-manager (the delegation line for done); if no, do nothing.
+- YESNO: He asked a yes/no question: start with yes or no, then one or two lines of why. Don't run, change or delegate anything.
+- OPEN: He asked a question: answer it fully from what you already know. Don't run, change or delegate anything.
+- TASK: He asked you to do something: first say back what he asked and how it helps him, and ask him to confirm. Don't start or delegate until he says yes.
+- CONFIRM: He confirmed the task you said back: delegate it to the implementer now, with Why, task, paths and the test command.
+- TALK: He is talking it through: give your feedback and opinion. Don't act.
+- TESTS: Tests: propose only a check for what failed, what may fail or what he asked, with the failure it prevents in one line; run it only after his yes.
 
 ## Output step (gate.py, before the reply)
 
@@ -89,6 +86,5 @@ The gate never blocks twice in a row (`stop_hook_active`), and fails open: any e
 
 ## Questions for him
 
-1. Is the wording of the three instruction lines and the five block reasons right?
-2. Should the input step also fire on "yes" / "go" right after the assistant proposed options? (As written: yes, as IMPLEMENTER.)
-3. Turn the switch on: set `"delegation-hook": {"enabled": true}` in `slots.json`.
+1. Is the wording of the five instruction lines and the five block reasons right?
+2. Turn the output step on: set `"delegation-gate": {"enabled": true}` in `slots.json`.

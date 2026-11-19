@@ -78,7 +78,7 @@ def check(tp, exclude=()):
 
 def delegation(tp):
     """The delegation gate's block reason, or None. Any error is logged and counts as no block."""
-    if not ctx.enabled("delegation-hook"):
+    if not ctx.enabled("delegation-gate"):
         return None
     try:
         import delegate

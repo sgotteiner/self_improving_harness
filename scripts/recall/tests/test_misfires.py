@@ -39,32 +39,6 @@ class AgentResultDuringTheTurn(unittest.TestCase):
         self.assertIsNone(step(started + arrived, "BLOCK TESTER | no test ran")[0])  # the tester's work arrived this turn
 
 
-class InputStep(unittest.TestCase):
-    def say(self, prev, prompt, reply):
-        brain.ask = h.brain_says(reply)
-        return delegate.input_step(prompt, h.transcript([h.user("x"), h.assistant(prev), h.user(prompt)]))[0]
-
-    def test_a_diary_answer_is_never_the_implementer(self):
-        asked = "Diary (D.md): Keep the map simple - 'the map is simple'. Add it?"
-        for answer in ("yes add it", "keep, and yes"):
-            self.assertEqual(self.say(asked, answer, "IMPLEMENTER | he approves"), [], answer)
-        self.assertEqual(len(self.say("Proposed option A.", "yes do it", "IMPLEMENTER | he approves")), 1)  # control
-
-    def test_sdd_question_is_built_from_the_brain_and_asked_once(self):
-        got = self.say("The retry works.", "good, nice", "SDD-ASK | payment retry | a failed payment is retried once")
-        self.assertEqual(len(got), 1)
-        self.assertIn('"SDD: update the SDD for payment retry? (it changed: a failed payment is retried once)"', got[0])
-        asked = "SDD: update the SDD for payment retry? (it changed: x)"
-        self.assertEqual(self.say(asked, "also nice", "SDD-ASK | payment retry | x"), [], "never asked twice")
-        km = self.say(asked, "yes", "KNOWLEDGE-MANAGER | he said yes to the SDD update")
-        self.assertIn("knowledge-manager", km[0])
-
-    def test_the_draft_and_the_code_know_the_new_kind(self):
-        self.assertEqual(delegate.check_sources(), [])
-        self.assertIn("SDD-ASK", delegate.INPUT_KINDS)
-        self.assertIn("SDD-ASK", delegate._lines("Instruction lines attached"))
-
-
 class TesterRule(unittest.TestCase):
     def test_running_the_one_test_command_satisfies_the_tester_rule(self):
         edit = h.assistant(h.tool("Edit", {"file_path": os.path.join(ROOT, "scripts", "recall", "x.py"), "old_string": "a", "new_string": "b"}), "Changed it.")

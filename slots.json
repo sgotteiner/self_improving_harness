@@ -37,7 +37,11 @@
   },
   "delegation-hook": {
     "enabled": true,
-    "about": "hooks tell the main session what to delegate (knowledge-manager, test, implementer) and the output gate blocks a reply that skipped it; wording in tasks/delegation-draft.md, approved by the owner 2026-11-15"
+    "about": "on his message, one cheap-model call says what kind of response he wants (yes/no, full answer, task to say back and confirm, confirm, talk) and prints one instruction line to the main session; also saves the setup snapshot; wording in tasks/delegation-draft.md. The output step is the separate slot delegation-gate"
+  },
+  "delegation-gate": {
+    "enabled": false,
+    "about": "the output gate's delegation blocks (tester, reviewer, knowledge-manager, setup-manager, loop); off 2026-11-19, owner: 'the gate will compare the work with my lessons and other than that yes'; on = the old behaviour"
   },
   "map-follows-sdd": {
     "enabled": true,

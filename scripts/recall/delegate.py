@@ -1,6 +1,7 @@
-"""Delegation by hooks (switch `delegation-hook` in slots.json, default off). Two cheap-model steps:
-  input_step: on his message -> which delegation it calls for (knowledge-manager, test, implementer), if any.
-  output_step: before the reply -> did the turn skip a delegation the core rules require (tester, reviewer,
+"""Delegation by hooks. Two cheap-model steps:
+  input_step (slot `delegation-hook`): on his message -> what kind of response he wants (yes/no, full answer, task to say
+  back, confirm of that task, talk) and the one instruction line for it.
+  output_step (slot `delegation-gate`, off): before the reply -> did the turn skip a delegation the core rules require (tester, reviewer,
   knowledge-manager)?
 The rules are read from CLAUDE.md at run time (the section "The core"), and the prompt wordings from
 tasks/delegation-draft.md (fenced blocks and bullet lists), so editing either changes the behavior; nothing is copied
@@ -13,8 +14,8 @@ from delegvet import veto
 
 CLAUDE_MD = os.path.join(ctx.ROOT, "CLAUDE.md")
 DRAFT = os.path.join(ctx.ROOT, "tasks", "delegation-draft.md")
-SLOT = "delegation-hook"
-INPUT_KINDS = ("KNOWLEDGE-MANAGER", "TEST", "IMPLEMENTER", "SDD-ASK")
+SLOT = "delegation-gate"  # the output step; the input step runs under `delegation-hook`
+INPUT_KINDS = ("YESNO", "OPEN", "TASK", "CONFIRM", "TALK")
 BLOCK_KINDS = ("TESTER", "TESTER-HERE", "REVIEWER", "KNOWLEDGE-MANAGER", "LOOP", "SETUP-MANAGER")
 
 
@@ -60,26 +61,15 @@ def _fill(template, **kw):
 
 
 def input_step(prompt, transcript):
-    """-> ([instruction lines to attach], tokens)."""
+    """-> ([the one instruction line for his kind of message, plus the tests line for a task], tokens)."""
     import brain
-    p = _fill(_prompt("Input step"), rules=rules(), ctx="\n".join(ctx.recent(transcript, 4)) if transcript else "(none)",
-              prompt=prompt)
-    out, tok = brain.ask(p, tag="delegate-in")
+    prev = ctx.last_turn(transcript, prompt.strip())[0][-1500:] if transcript else ""
+    out, tok = brain.ask(_fill(_prompt("Input step"), prev=prev or "(none)", prompt=prompt), tag="delegate-in")
     lines = _lines("Instruction lines attached")
-    prev = ctx.last_turn(transcript, prompt.strip())[0] if transcript else ""
-    res = []
-    for l in out.splitlines()[:2]:
-        kind, _, why = [x.strip(" -*`") for x in l.partition("|")]
-        if kind == "IMPLEMENTER" and "Add it?" in prev and "Diary" in prev:
-            ctx.log("delegate: IMPLEMENTER dropped, his message answers a diary question")
-        elif kind == "SDD-ASK" and "SDD: update the SDD for" in prev:
-            ctx.log("delegate: SDD-ASK dropped, the question was already asked")
-        elif kind == "SDD-ASK" and kind in lines:
-            feat, _, changed = [x.strip() for x in why.partition("|")]
-            res.append(lines[kind].replace("{question}", f"SDD: update the SDD for {feat}? (it changed: {changed or 'see above'})"))
-        elif kind in lines:
-            res.append(lines[kind] + (f" Context: {why}" if why else ""))
-    return res, tok
+    kind = re.sub(r"[^A-Z]", "", (out.split() or [""])[0].upper())
+    if kind not in INPUT_KINDS:
+        return [], tok
+    return [lines[kind]] + ([lines["TESTS"]] if kind in ("TASK", "CONFIRM") else []), tok
 
 
 def output_step(transcript, root=ctx.ROOT):
@@ -119,10 +109,10 @@ def check_sources():
     loudly, not silently turn the delegation off). Run by `capture.py check`."""
     out = []
     for label, fn in (("CLAUDE.md section 'The core'", rules),
-                      ("draft prompt 'Input step'", lambda: _need(_prompt("Input step"), ("rules", "ctx", "prompt"))),
+                      ("draft prompt 'Input step'", lambda: _need(_prompt("Input step"), ("prev", "prompt"))),
                       ("draft prompt 'Output step'", lambda: _need(_prompt("Output step"), ("rules", "human", "tools", "text",
                                                                                               "facts", "max_rounds"))),
-                      ("draft 'Instruction lines attached'", lambda: _keys(_lines("Instruction lines attached"), INPUT_KINDS)),
+                      ("draft 'Instruction lines attached'", lambda: _keys(_lines("Instruction lines attached"), INPUT_KINDS + ("TESTS",))),
                       ("draft 'Block reasons'", lambda: _keys(_lines("Block reasons"), BLOCK_KINDS))):
         try:
             fn()
