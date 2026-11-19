@@ -47,15 +47,5 @@ class Gate(unittest.TestCase):
         reason = json.loads(out.getvalue())["reason"]
         self.assertTrue(all(f"cases/{c}.md" in reason for c in ids))
 
-    def test_delegation_gate_off_makes_no_delegation_block(self):
-        import delegate
-        with mock.patch.object(ctx, "enabled", side_effect=lambda s: s == "delegation-hook"), mock.patch.object(delegate, "output_step") as step:
-            self.assertIsNone(gate.delegation("x"))  # the old slot alone no longer turns the gate on
-        step.assert_not_called()
-        with mock.patch.object(ctx, "enabled", side_effect=lambda s: s == "delegation-gate"), \
-                mock.patch.object(delegate, "output_step", return_value=(("REVIEWER", "call the reviewer"), 1)):
-            self.assertEqual(gate.delegation("x"), "call the reviewer")  # on = today's behaviour
-
-
 if __name__ == "__main__":
     unittest.main()

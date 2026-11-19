@@ -11,7 +11,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ctx, embed, graphscore, index
 
-VARIANT = "best"  # lesson scoring (graphscore.agg); eval_variants.py sets it to try the others
+VARIANT = "best"  # lesson scoring (graphscore.agg)
 REPLY_KINDS = ("action", "path")  # ("action",) drops the whole-path nodes
 ATTACH = "all"  # capture: all | single | agree (match below)
 _G = {}  # {with pending: data}, built once per process; reset() drops it (tests, evals that change the files)

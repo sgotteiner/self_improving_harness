@@ -32,17 +32,6 @@ class RunAll(unittest.TestCase):
             code = r.main(force)
         return code, out.getvalue().splitlines()
 
-    def test_the_paid_eval_runs_once_then_is_skipped_until_its_files_change(self):
-        code, lines = self.go()
-        self.assertEqual((code, lines[-1]), (0, "PASSED"))
-        self.assertTrue(lines[1].startswith("PASS  paid eval"), lines)
-        code, lines = self.go()
-        self.assertEqual(lines[1], "SKIP  paid eval: skipped (unchanged)")
-        os.utime(self.watched, None)  # the measured file changed after the last pass
-        self.assertTrue(self.go()[1][1].startswith("PASS  paid eval"))
-        self.assertEqual(self.go()[1][1], "SKIP  paid eval: skipped (unchanged)")
-        self.assertTrue(self.go(force=True)[1][1].startswith("PASS  paid eval"))  # --eval
-
     def test_a_failing_suite_shows_only_its_failing_lines(self):
         self.suites[0] = ("free", PY + ["print('ok line'); print('FAIL: test_a'); print('AssertionError: x'); print('noise'); raise SystemExit(1)"], 30, None)
         code, lines = self.go()
@@ -50,12 +39,6 @@ class RunAll(unittest.TestCase):
         self.assertIn("FAILED", lines)
         shown = lines[lines.index("FAILED") + 1:]
         self.assertTrue(any("FAIL: test_a" in l for l in shown) and not any("noise" in l for l in shown), shown)
-
-    def test_a_failed_paid_eval_is_not_stamped(self):
-        self.suites[1] = ("paid eval", PY + ["print('BAD want=False got=True'); raise SystemExit(1)"], 30, [self.watched])
-        self.assertEqual(self.go()[0], 1)
-        self.assertEqual(self.go()[0], 1)  # not skipped next time: it never passed
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,11 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import capwrite, ctx, embed, index, pending
 from casesave import PENDING, approve, check_all, move  # noqa: F401 (the CLI below; callers of capture.move/approve)
 
-DETECT = ("The assistant's previous turn:\n{prev}\n\nTool calls: {tools}{rej}\n\nThe owner's new message: {prompt}\n\n"
-          "Is the new message a correction or complaint about how the assistant behaved (not what it built): e.g. 'I told "
-          "you', 'that's not what I asked', 'why did you', ignoring an instruction, missing the point? A new request, an "
-          "approval or a thanks is NO. Reply 'NO' or 'YES | <one sentence: the assistant's mistake>'.")
-# DETECT, DRAFT and matches() are no longer on the capture path; only the evals (mechcapture.py) still use them
+# DRAFT and matches() are no longer on the capture path
 DRAFT = ("Draft a lesson case from this mistake of an AI coding assistant. Mistake: {why}\nAssistant's turn:\n{prev}\n"
          "Owner's words: {prompt}\n\nReply with JSON only: {{\"slug\": \"kebab-case-id\", \"situation\": [3-4 phrasings of how "
          "the situation shows up, including what the session is doing at that moment], \"wrong\": \"what was done wrong\", "

@@ -30,14 +30,19 @@ class Capwrite(unittest.TestCase):
         self.assertIn("skipped the test", out[0])
         self.assertIn("capture.py write", capowed.settle(tp, False))  # the owed marker was set: the gate asks for the write
 
-    def test_write_needs_every_part_accepts_not_stated_and_refuses_a_privacy_hit(self):
-        self.assertFalse(capwrite.write({k: v for k, v in GOOD.items() if k != "did"})[0])
-        self.assertFalse(capwrite.write(dict(GOOD, disliked=" "))[0])
-        self.assertTrue(capwrite.write(GOOD)[0])
-        self.assertTrue(os.path.exists(os.path.join(self.d, "p", "run-a-test.md")))
-        ok, msg = capwrite.write(dict(GOOD, did="edited C:\\work\\a.py"))
-        self.assertFalse(ok)
-        self.assertIn("privacy", msg)
+    def test_no_lesson_is_added_without_his_yes(self):
+        cases = os.path.join(self.d, "cases")
+        os.makedirs(cases)
+        with mock.patch.object(index, "CASES", cases):
+            ok, msg = capwrite.write(GOOD)  # no "approved": true
+            self.assertTrue(ok)
+            self.assertIn("only his yes adds it", msg)
+            self.assertEqual(os.listdir(cases), [])
+            self.assertFalse(os.path.exists(os.path.join(self.d, "p", "run-a-test.md")))
+            self.assertTrue(capwrite.write(dict(GOOD, approved=True))[0])
+            self.assertTrue(os.path.exists(os.path.join(cases, "run-a-test.md")))
+            self.assertFalse(capwrite.write({k: v for k, v in GOOD.items() if k != "did"})[0])  # a missing part writes nothing
+            self.assertIn("privacy", capwrite.write(dict(GOOD, approved=True, did="edited C:\work\a.py"))[1])
 
     def test_clean_prompt_does_not_tell_the_brain_to_infer(self):
         self.assertNotIn("infer", clean.PROMPT)

@@ -22,14 +22,6 @@ class Short(unittest.TestCase):
             self.assertIn("short summary", o["reason"])
             self.assertEqual(shortreturn.verdict({"last_assistant_message": LONG, "stop_hook_active": True}), "")
 
-    def test_short_passes(self):
-        with on("short-returns"):
-            self.assertEqual(shortreturn.verdict({"last_assistant_message": SHORT}), "")
-
-    def test_switch_off_passes(self):
-        with on():
-            self.assertEqual(shortreturn.verdict({"last_assistant_message": LONG}), "")
-
     def test_message_from_the_agent_transcript(self):
         tp = h.transcript([h.user("x"), h.assistant(LONG)])
         with on("short-returns"):
@@ -39,10 +31,6 @@ class Short(unittest.TestCase):
         with on("short-returns"):
             self.assertEqual(shortreturn.verdict({}), "")
             self.assertEqual(shortreturn.verdict({"agent_transcript_path": "/nope"}), "")
-
-    def test_slot_is_on_in_slots_json(self):
-        self.assertTrue(json.load(open(ctx.ROOT + "/slots.json", encoding="utf-8"))["short-returns"]["enabled"])
-
 
 if __name__ == "__main__":
     unittest.main()

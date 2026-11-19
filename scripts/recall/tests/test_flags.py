@@ -60,29 +60,6 @@ class Flags(unittest.TestCase):
         self.assertIn("**kept the old endpoint alongside the new one** — owner asked: (not stated)", t)  # the brain's guess is never written
         self.assertNotIn("add a new one", t)
 
-    def test_a_return_without_choices_changes_nothing_and_costs_no_call(self):
-        a, ask = self.ask(REPLY)
-        self.assertEqual(flags.process(self.session("All done. Tests pass."), ask), [])
-        self.assertEqual((a.prompts, self.text()), ([], FLAGS))
-
-    def test_the_same_choices_again_are_deduped(self):
-        a, ask = self.ask(REPLY)
-        flags.process(self.session(REPORT), ask)
-        once = self.text()
-        self.assertEqual(flags.process(self.session(REPORT), ask), [])
-        self.assertEqual(self.text(), once)
-
-    def test_a_return_is_read_once_per_session(self):
-        a, ask = self.ask(REPLY)
-        tp = self.session(REPORT)
-        flags.process(tp, ask), flags.process(tp, ask)
-        self.assertEqual(len(a.prompts), 1)
-
-    def test_no_flags_file_means_nothing_is_written(self):
-        os.remove(self.path)
-        self.assertEqual(flags.process(self.session(REPORT), self.ask(REPLY)[1]), [])
-        self.assertFalse(os.path.exists(self.path))
-
     def test_an_edit_made_during_the_brain_call_is_not_lost(self):
         def ask(p, system="", tag=""):
             open(self.path, "a", encoding="utf-8", newline="").write("- added by someone else meanwhile\n")

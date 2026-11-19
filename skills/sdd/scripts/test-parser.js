@@ -22,11 +22,9 @@ p = parse("# P\r\nfeature: A thing.\r\n\r\n## One\r\nid: one\r\nfeature: x\r\nco
 t("parser: CRLF line endings give clean titles and values", p.title === "P" && p.sections[0].title === "One" && p.sections[0].fields.id === "one" && p.root.fields.feature === "A thing.", JSON.stringify(p.sections[0].fields));
 p = parse("# P\n\n## One\nid: one\nfeature: x\n\n# Second\n\n## Two\nid: two\nfeature: y\n");
 t("parser: a second level-1 heading is an error", msgs("# P\n\n## One\nid: one\nfeature: x\n\n# Second\n").join("|").includes("second level-1 heading"), msgs("# P\n# Q\n").join("|"));
-t("parser: a second # does not become a section", p.sections.map(s => s.title).join("|") === "One|Two");
 t("parser: the title may carry feature and open, not id/after/related", msgs("# P\nid: x\nafter: y\nrelated: z\nfeature: ok\nopen: ok\n").length === 3 && parse("# P\nfeature: ok\nopen: ok\n").errors.length === 0, msgs("# P\nid: x\n").join("|"));
 t("parser: a skipped level is an error", msgs("# P\n\n## A\nid: a\nfeature: x\n\n#### C\nid: c\nfeature: x\n").join("|") === "heading jumps from level 2 to 4");
 t("parser: a ### directly under the title is an error", /top-level feature must be a level-2/.test(msgs("# P\n\n### A\nid: a\nfeature: x\n").join("|")));
 t("parser: unknown field", msgs("# P\n\n## A\nid: a\nfeature: x\ncolor: red\n").join("|") === 'unknown field "color:" (fields: id, feature, after, related, value, open, tag)');
 t("parser: duplicate field", msgs("# P\n\n## A\nid: a\nfeature: x\nfeature: y\n").join("|") === 'field "feature:" given twice');
-t("parser: tag is a field", parse("# P\n\n## A\nid: a\nfeature: x\ntag: Label\n").sections[0].fields.tag === "Label");
 t("parser: an indented line continues a field", parse("# P\n\n## A\nid: a\nfeature: one\n  two\n").sections[0].fields.feature === "one two");

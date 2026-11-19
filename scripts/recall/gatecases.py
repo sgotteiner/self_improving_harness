@@ -1,6 +1,6 @@
 """The gate learns from its false alarms. When the main session's reply says a block was a false alarm, the verdict log marks
 that block as a labelled false alarm (a `label` record) and the turn's counted facts become a regression case in
-gate_eval_set.jsonl (eval_gate.py replays them). A case holds only booleans and agent types, never words of his or of the turn,
+gate_eval_set.jsonl. A case holds only booleans and agent types, never words of his or of the turn,
 so the tracked file stays clean. Called by gate.py before anything else, also on the reply that follows a block."""
 import hashlib, json, os, re
 

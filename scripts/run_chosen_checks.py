@@ -7,12 +7,8 @@ Usage: python -I scripts/run_chosen_checks.py [--files <f> ...] [--since <ref>] 
   (default)       without --files: the files changed since the last commit (git diff HEAD + untracked); a line says so.
   --since <ref>   the files changed since <ref> instead, e.g. HEAD~1 for the commit about to be pushed.
   --all           every suite, regardless of changes: only when the owner asks for a full regression run.
-  --eval          also force the two paid evals even when their files are unchanged.
 Selection rules are in select_tests.py.
-Suites: the recall hooks' unit tests, the SDD tools' tests (node), the setup check (cases, sources, diaries), the gate eval
-(labelled false alarms and real blocks replayed through the gate's code, free). Two suites call the real cheap model and cost
-tokens, so each runs only when the files it measures changed since it last passed (or with --eval): the decision detector's
-eval, and the gate eval's real-brain step. An unchanged one prints "skipped (unchanged)"."""
+Suites: the recall hooks' unit tests, the SDD tools' tests (node), the setup check (cases, sources, diaries)."""
 import os, re, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # -I drops the script's own folder
@@ -21,16 +17,11 @@ import select_tests
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 RECALL = os.path.join(ROOT, "scripts", "recall")
 PY = [sys.executable, "-I"]
-GATE_FILES = [os.path.join(RECALL, f) for f in ("delegate.py", "delegvet.py", "turnfacts.py", "suitecmd.py", "gate_eval_set.jsonl")] + \
-             [os.path.join(ROOT, "tasks", "delegation-draft.md"), os.path.join(ROOT, "CLAUDE.md")]
 # (name, command, timeout, files whose change makes it run; None = always)
 SUITES = [
     ("recall tests", PY + ["scripts/recall/tests/run_tests.py"], 300, None),
     ("sdd tests", ["node", "skills/sdd/scripts/test-sdd.js"], 300, None),
     ("capture check", PY + ["scripts/recall/capture.py", "check"], 300, None),
-    ("gate eval", PY + ["scripts/recall/eval_gate.py"], 120, None),
-    ("gate eval (real brain)", PY + ["scripts/recall/eval_gate.py", "--real"], 600, GATE_FILES),
-    ("decision eval", PY + ["scripts/recall/eval_decisions.py"], 900, [os.path.join(RECALL, "decisions.py"), os.path.join(RECALL, "eval_decisions.py")]),
 ]
 BAD = re.compile(r"\bFAIL(ED)?\b|\bERROR\b|\bBAD\b|Traceback|Error:|\[FAIL\]")
 

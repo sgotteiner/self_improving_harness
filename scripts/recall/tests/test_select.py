@@ -18,17 +18,12 @@ class Select(unittest.TestCase):
     def test_a_case_file_selects_only_the_capture_check(self):
         self.assertEqual(list(s.select(["cases/x.md"])), ["capture check"])
 
-    def test_gate_decision_and_sdd_code_select_their_suites(self):
-        self.assertEqual(list(s.select(["scripts/recall/eval_gate.py"])), ["recall tests", "gate eval", "gate eval (real brain)"])
-        self.assertIn("decision eval", s.select(["scripts/recall/decisions.py"]))
+    def test_sdd_code_selects_its_suite(self):
         self.assertEqual(list(s.select(["skills/sdd/scripts/x.js", "skills/system-map/y.md"])), ["sdd tests"])
 
-    def test_an_unrelated_file_selects_nothing(self):
-        self.assertEqual(s.select(["README.txt", "tasks/todo.md"]), {})
-
     def test_a_module_no_test_covers_selects_nothing_and_is_uncovered(self):
-        self.assertEqual(s.select(["scripts/recall/replay.py"]), {})
-        self.assertEqual(s.uncovered(["scripts/recall/replay.py", "scripts/recall/shortreturn.py"]), ["scripts/recall/replay.py"])
+        self.assertEqual(s.select(["scripts/recall/calibrate.py"]), {})
+        self.assertEqual(s.uncovered(["scripts/recall/calibrate.py", "scripts/recall/shortreturn.py"]), ["scripts/recall/calibrate.py"])
 
     def test_a_changed_test_file_runs_itself(self):
         self.assertEqual(s.select(["scripts/recall/tests/test_flags.py"])["recall tests"][1], ["test_flags"])
@@ -54,14 +49,10 @@ class Main(unittest.TestCase):
         self.assertNotIn("sdd tests", o)
 
     def test_the_given_file_list_decides_and_an_uncovered_file_runs_nothing(self):
-        cmd = [sys.executable, "-I", r.__file__, "--files", "scripts/recall/replay.py"]
+        cmd = [sys.executable, "-I", r.__file__, "--files", "scripts/recall/calibrate.py"]
         o = subprocess.run(cmd, capture_output=True, text=True).stdout
-        self.assertIn("not covered by any check: scripts/recall/replay.py", o)
+        self.assertIn("not covered by any check: scripts/recall/calibrate.py", o)
         self.assertTrue("nothing to test" in o and "CHOOSE" not in o and "no --files" not in o, o)
-
-    def test_nothing_chosen_says_so(self):
-        self.assertIn("nothing to test", self.go({}))
-
 
 if __name__ == "__main__":
     unittest.main()

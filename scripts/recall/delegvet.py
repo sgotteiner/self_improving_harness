@@ -7,7 +7,7 @@ AGENT_OF = {"TESTER": "tester", "REVIEWER": "reviewer", "KNOWLEDGE-MANAGER": "kn
 
 def features(t):
     """The counted facts of a turn that decide a veto, as plain booleans and agent types: what a labelled false alarm is kept as
-    (no words of his, no text of the turn), and what eval_gate.py replays."""
+    (no words of his, no text of the turn)."""
     keys = ("called", "pending", "claims", "sm_ok", "fell_short", "round_started", "review_open", "suite_unexcused", "edited", "returned")
     return {k: t[k] for k in keys}
 

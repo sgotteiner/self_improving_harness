@@ -9,11 +9,11 @@ SYSTEM_PREFIXES = ("<task-notification>", "[SYSTEM NOTIFICATION", "<system-remin
 NOTICE_PREFIX = "<task-notification>"
 LOG = os.path.join(ROOT, "scripts", "recall", "results", "hook.log")
 # Relevance cutoff on cosine (fastembed bge-small), shared by hook.py and gate.py. Below it a case is
-# not worth a brain call. Set from `python -I scripts/recall/eval_recall.py` (it prints the chosen value): the lowest
+# not worth a brain call. Set by measurement (the eval script is gone, see git history): the lowest
 # 0.01 step where at most 1 of 22 unrelated eval queries passes, keeping 28/30 recall. Unrelated text tops out at 0.62
 # median / 0.74 max on this model, so the old 0.60 passed nearly all.
 RELEVANCE_MIN = 0.70
-# cosine above which a draft counts as the same as an existing case/entry/flag. Measured by eval_recall.py: the best
+# cosine above which a draft counts as the same as an existing case/entry/flag. Measured earlier: the best
 # different-case/unrelated score is 0.76, so 0.80 keeps a margin (a wrong merge hides a new item; a missed one is a duplicate).
 SAME = 0.80
 HEDGE = re.compile(r"\W*(?:(?:this|it|that)\s+)?(?:(?:may|might|could)\s+(?:well\s+)?be\s+(?:ok|okay|fine)|unclear|possibly|perhaps|not sure)", re.I)

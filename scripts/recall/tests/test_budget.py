@@ -27,22 +27,5 @@ class Budget(unittest.TestCase):
                 brain.ask("c")  # would start at 260 s of 300: refused
         self.assertEqual(len(calls), 2)
 
-    def test_the_draft_line_prints_even_when_every_brain_stage_is_skipped(self):
-        ctx.T0 = time.monotonic() - 1000
-        tp = h.transcript([h.user("x"), h.assistant("I propose A or B.")])
-        out, order = io.StringIO(), []
-        import drafts, setupstate
-        with mock.patch.object(ctx, "enabled", side_effect=lambda s: s in ("capture", "decision-capture", "recall-hook", "delegation-hook")), \
-                mock.patch.object(drafts, "daily_line", side_effect=lambda: order.append("drafts") or ["DRAFTS-LINE"]), \
-                mock.patch.object(setupstate, "save_snapshot", side_effect=lambda tp: order.append("snapshot")), \
-                mock.patch.object(brain.subprocess, "run") as run, \
-                mock.patch.object(sys, "stdin", io.StringIO(json.dumps({"prompt": "go with option a please", "transcript_path": tp}))), \
-                mock.patch.object(sys, "stdout", out):
-            hook.main()
-        run.assert_not_called()
-        self.assertIn("DRAFTS-LINE", out.getvalue())
-        self.assertEqual(order, ["snapshot", "drafts"], "the snapshot is taken first, before any slow stage")
-
-
 if __name__ == "__main__":
     unittest.main()

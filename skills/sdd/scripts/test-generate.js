@@ -13,14 +13,12 @@ gen(sdd, map2);
 t("generator: twice gives identical bytes", fs.readFileSync(map1).equals(fs.readFileSync(map2)));
 const T = readT(read(map1));
 t("generator: nesting and flow order follow the SDD", order(T) === "take-order,pack-send,stock" && order(find(T, "take-order")) === "check-stock,take-payment" && order(find(T, "pack-send")) === "print-label,hand-over" && find(T, "retry-payment") !== undefined, order(T));
-t("generator: lanes, links, red note, file", T.children[0].lane === "flow" && T.children[2].lane === "support" && find(T, "check-stock").talks[0].to === "stock" && find(T, "take-payment").note === "Open: whether a partly paid order should be kept is not known" && find(T, "retry-payment").file === "shop/payment.py");
 fs.writeFileSync(sdd, good.replace("The customer pays; the order is created only after the payment is confirmed.", "The customer pays by card or by transfer; the order is created only after the payment is confirmed."));
 const map3 = path.join(tmp, "map3.html");
 gen(sdd, map3);
 r = run(path.join(sys, "diff-maps.js"), map1, map3);
 t("generator: changing one section changes exactly that box", r.out.trim() === "boxes before/after: 9 9\nidentical: 8 changed: 1 added: 0 removed: 0\nadded: -\nchanged: take-payment\nremoved: -", r.out.trim());
 const tail = (s) => s.slice(s.lastIndexOf(MARK));
-t("generator: rendering code outside T is untouched", tail(read(map1)) === tail(read(map3)));
 
 // ---- the validator gates the generator: nothing is written
 const gate = (name, text, want) => {

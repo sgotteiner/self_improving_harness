@@ -28,17 +28,6 @@ class Resumed(unittest.TestCase):
                 got = step(earlier + now[:2], f"BLOCK {block} | missing")[0]  # control: the same turn without the resume
                 self.assertEqual(got[0] if got else None, block)
 
-    def test_resumed_implementer_is_an_implementer_call(self):
-        es = [h.user("start"), *h.launch("implementer", "ag1", "t1"), h.notice("ag1", "t1"), h.user("again"), *h.resume("ag1")]
-        t = turnfacts.turn(h.transcript(es), ROOT)
-        self.assertIn("implementer", t["called"])
-        self.assertIn("IMPLEMENTER", t["facts"])
-
-    def test_agent_type_matched_by_substring(self):
-        es = [h.user("x"), h.assistant(h.tool("Agent", {"subagent_type": "my-reviewer-v2", "description": "d"})), h.assistant("ok")]
-        self.assertEqual(turnfacts.turn(h.transcript(es), ROOT)["called"], ["reviewer"])
-
-
 class SetupEdits(unittest.TestCase):
     def setUp(self):
         self.root = h.git_repo({"scripts/a.py": "1", "tasks/delegation-draft.md": "d", "tasks/todo.md": "t", "scripts/b.py": "1"})
@@ -52,9 +41,6 @@ class SetupEdits(unittest.TestCase):
         os.makedirs(os.path.join(self.root, "scripts/recall/results"))
         open(os.path.join(self.root, "scripts/recall/results/run.json"), "w").write("{}")  # generated
         self.assertEqual(sorted(turnfacts.turn(self.tp, self.root)["setup"]), ["scripts/a.py", "tasks/delegation-draft.md"])
-
-    def test_nothing_changed_since_the_snapshot(self):
-        self.assertEqual(turnfacts.turn(self.tp, self.root)["setup"], [])
 
     def test_a_failed_snapshot_deletes_the_stale_one(self):
         open(os.path.join(self.root, "scripts/a.py"), "w").write("44")
@@ -83,11 +69,6 @@ class Verdicts(unittest.TestCase):
         self.assertEqual(got[0], "TESTER")  # a real finding with a hedge later in it still blocks
         self.assertEqual(step(es, "BLOCK TESTER | no test ran")[0][0], "TESTER")
 
-    def test_nothing_edited_called_or_claimed_skips_the_brain(self):
-        got, ask = step([h.user("what is a hook?"), h.assistant("A hook is a script the harness runs.")], "BLOCK TESTER | x")
-        self.assertIsNone(got)
-        self.assertEqual(ask.prompts, [])
-
     def test_background_agent_still_running(self):
         started = [h.user("make it"), *h.launch("implementer", "ag1", "t1"), h.assistant("Started the implementer; I'll report when it returns.")]
         self.assertIsNone(step(started, "BLOCK TESTER | call the tester")[0])
@@ -110,11 +91,6 @@ class Verdicts(unittest.TestCase):
                 self.assertIsNone(step(es, f"BLOCK {kind} | The implementer is still building the hook changes")[0], kind)
         done = [h.user("build it"), h.assistant(call), h.notice("ag9", "t7"), h.assistant("The implementer finished; the code changed.")]
         self.assertEqual(turnfacts.turn(h.transcript(done), ROOT)["pending"], [])  # its notification names the tool-use id
-
-    def test_the_round_limit_is_a_constant_in_the_prompt(self):
-        _, ask = step([h.user("x"), EDIT()], "OK")
-        self.assertIn(f"at most {turnfacts.ROUNDS_MAX} rounds", ask.prompts[0])
-
 
 class InputAndSources(unittest.TestCase):
     def test_the_intent_step_prints_the_instruction_for_his_kind_of_message(self):

@@ -4,8 +4,6 @@ import os, re, subprocess
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 TESTS = os.path.join(ROOT, "scripts", "recall", "tests")
 CAPTURE = {"index", "embed", "retrieve", "validate", "casesave", "capture"}
-DECISIONS = {"decisions", "eval_decisions"}
-GATE = {"gate", "delegate", "delegvet", "turnfacts", "gatecases", "eval_gate", "suitecmd"}
 SELF = {"scripts/run_chosen_checks.py", "scripts/select_tests.py"}
 
 
@@ -56,15 +54,9 @@ def select(files):
                 pick("recall tests", f)
             if base in CAPTURE:
                 pick("capture check", f)
-            if base in DECISIONS:
-                pick("decision eval", f)
-            if base in GATE:
-                pick("gate eval", f); pick("gate eval (real brain)", f)
-        elif f == "scripts/recall/gate_eval_set.jsonl":
-            pick("gate eval", f); pick("gate eval (real brain)", f)
         elif f.startswith("cases/"):
             pick("capture check", f)
         elif f.startswith(("skills/sdd/", "skills/system-map/")):
             pick("sdd tests", f)
-    order = ["recall tests", "sdd tests", "capture check", "gate eval", "gate eval (real brain)", "decision eval"]
+    order = ["recall tests", "sdd tests", "capture check"]
     return {s: (", ".join(sorted(set(why[s]))[:4]) + " changed", [] if s != "recall tests" or all_recall else sorted(tests)) for s in order if s in why}

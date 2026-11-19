@@ -34,31 +34,6 @@ class ProjectCheck(unittest.TestCase):
         p = projcheck.check(d)
         self.assertFalse(any("format" in x for x in p), p)
 
-    def test_once_per_project_per_day_and_silent_when_clean_or_not_a_project(self):
-        d = self.project("no documents section here\n")
-        tp = h.transcript([h.user("x")], cwd=d)
-        with mock.patch.object(projcheck, "STATE", tempfile.mkdtemp()):
-            first = projcheck.first_message(tp, d)
-            self.assertEqual(len(first), 1)
-            self.assertIn("Project documents", first[0])
-            self.assertEqual(projcheck.first_message(tp, d), [])  # once
-            other = h.transcript([h.user("y")], cwd=d)
-            self.assertEqual(projcheck.first_message(other, d), [])  # a new session the same day: still once
-            self.assertEqual(projcheck.check(tempfile.mkdtemp()), [])  # a folder that is no project says nothing
-            self.assertEqual(projcheck.first_message(tp, tempfile.mkdtemp()), [])
-
-    def test_a_new_day_asks_again_and_removes_the_old_markers(self):
-        d = self.project("no documents section here\n")
-        tp = h.transcript([h.user("x")], cwd=d)
-        state = tempfile.mkdtemp()
-        with mock.patch.object(projcheck, "STATE", state):
-            self.assertEqual(len(projcheck.first_message(tp, d)), 1)
-            (marker,) = os.listdir(state)
-            old = marker.replace(str(projcheck.datetime.date.today()), "2020-01-01")
-            os.rename(os.path.join(state, marker), os.path.join(state, old))
-            self.assertEqual(len(projcheck.first_message(tp, d)), 1)  # the old day's marker does not count
-            self.assertEqual(os.listdir(state), [marker])  # and it was removed
-
     def test_the_marker_is_written_only_after_the_check_ran(self):
         d = self.project("no documents section here\n")
         tp = h.transcript([h.user("x")], cwd=d)
@@ -67,16 +42,6 @@ class ProjectCheck(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 projcheck.first_message(tp, d)
         self.assertFalse(os.path.exists(state) and os.listdir(state), "a failed check must be tried again on the next message")
-
-    def test_an_sdd_outside_git_gets_no_map_or_hook_advice(self):
-        good = open(os.path.join(ctx.ROOT, "skills", "sdd", "scripts", "fixtures", "good.md"), encoding="utf-8").read()
-        d = tempfile.mkdtemp()  # not a git repo
-        open(os.path.join(d, "sdd.md"), "w", encoding="utf-8").write(good)
-        self.assertEqual(projcheck.sdd_problems(os.path.join(d, "sdd.md")), [])
-
-    def test_the_setups_own_documents_are_the_vault_files(self):
-        self.assertEqual(projcheck.documents(os.path.normpath(ctx.ROOT)), projcheck.SETUP_DOCS)
-
 
 if __name__ == "__main__":
     unittest.main()

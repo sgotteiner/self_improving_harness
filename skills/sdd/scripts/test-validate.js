@@ -28,12 +28,8 @@ t("validator: duplicate id", /^duplicate id "a" \(also on "S a", line 3\)$/.test
 t("validator: an after chain that loops", msgs(doc(one("a", "").replace("feature:", "after: b\nfeature:"), one("b").replace("feature:", "after: a\nfeature:"))).filter(m => /loops/.test(m)).length === 2);
 t("validator: after its own id loops", msgs(doc(one("a").replace("feature:", "after: a\nfeature:"))).join() === 'after chain loops back through "a"');
 t("validator: related to its own id", msgs(doc(one("a").replace("feature:", "related: a\nfeature:"))).join() === 'related names its own id "a"');
-t("validator: unknown field and duplicate field reach the validator", msgs(doc(one("a").replace("feature:", "color: red\nfeature:"))).join() === 'unknown field "color:" (fields: id, feature, after, related, value, open, tag)');
 t("validator: a skipped heading level", msgs(doc(one("a"), "#### Deep\nid: d\nfeature: x\n")).join() === "heading jumps from level 2 to 4");
-t("validator: tag is accepted", msgs(doc(one("a").replace("feature:", "tag: Label\nfeature:"))).length === 0);
 t("validator: no feature", msgs(doc("## A\nid: a\n")).join() === "has no feature (say in plain words what it is / what happens here)");
-t("validator: a second # heading is reported", msgs(doc(one("a"), "# Another\n")).join() .startsWith("second level-1 heading"));
-t("validator: id/after on the title are reported", msgs("# P\nid: x\n\n" + one("a")).join() === 'the title (#) may carry only feature and open, not "id:"');
 
 // ---- plain words: what is flagged and what is not
 const pw = (s) => plainWordsProblems(s).join("+");

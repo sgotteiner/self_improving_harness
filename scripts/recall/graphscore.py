@@ -1,5 +1,5 @@
 """How a lesson scores from the nodes that match a query (graph.py). rows = [(similarity, lesson id, path key)] of the searched
-nodes. Variants (tried against each other by eval_variants.py): best = its best node; top3 = mean of its 3 best nodes;
+nodes. Variants (tried against each other earlier): best = its best node; top3 = mean of its 3 best nodes;
 path = its best occurrence, an occurrence scoring as the mean of its 2 best nodes; normN = best node minus N/100 * ln(its
 node count), so a lesson with many examples does not win by having many chances. Returns [(score, lesson id, path key)] best first."""
 import math

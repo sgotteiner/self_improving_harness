@@ -6,7 +6,7 @@ os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 warnings.filterwarnings("ignore")
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "vectors.db")
-DEFAULT = "fastembed"  # chosen by eval_recall.py
+DEFAULT = "fastembed"  # chosen by an earlier measurement
 _models = {}
 
 
