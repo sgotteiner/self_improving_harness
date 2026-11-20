@@ -23,8 +23,8 @@ def _model(backend):
     return _models[backend]
 
 
-def encode(texts, backend=DEFAULT):
-    """Return unit-length vectors (n, dim); cached per (backend, text)."""
+def encode(texts, backend=DEFAULT, cache=True):
+    """Return unit-length vectors (n, dim); cached per (backend, text). cache=False: a cached vector is used, a new one is not stored."""
     con = sqlite3.connect(DB)
     con.execute("CREATE TABLE IF NOT EXISTS v(k TEXT PRIMARY KEY, vec BLOB)")
     keys = [backend + hashlib.sha1(t.encode("utf-8")).hexdigest() for t in texts]
@@ -36,18 +36,18 @@ def encode(texts, backend=DEFAULT):
         new /= np.linalg.norm(new, axis=1, keepdims=True) + 1e-9
         for i, v in zip(todo, new):
             have[keys[i]] = v
-            con.execute("INSERT OR REPLACE INTO v VALUES (?,?)", (keys[i], v.tobytes()))
+            cache and con.execute("INSERT OR REPLACE INTO v VALUES (?,?)", (keys[i], v.tobytes()))
         con.commit()
     con.close()
     return np.stack([have[k] for k in keys]) if keys else np.zeros((0, 1))
 
 
-def scores(query, docs, backend=DEFAULT):
+def scores(query, docs, backend=DEFAULT, cache_query=True):
     """docs: {id: [texts]}. query: a text or a list of texts (chunks of a long one; the model reads ~512 tokens).
-    Return {id: best cosine of any query text to any of the id's texts}."""
+    Return {id: best cosine of any query text to any of the id's texts}. cache_query=False: the query is not stored."""
     ids = [i for i in docs for _ in docs[i]]
     m = encode([t for i in docs for t in docs[i]], backend)
-    s = (m @ encode([query] if isinstance(query, str) else query, backend).T).max(axis=1)
+    s = (m @ encode([query] if isinstance(query, str) else query, backend, cache_query).T).max(axis=1)
     out = {}
     for i, v in zip(ids, s):
         out[i] = max(out.get(i, -1.0), float(v))

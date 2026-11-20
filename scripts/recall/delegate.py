@@ -55,6 +55,11 @@ def _lines(after):
     return out
 
 
+def is_done(lines):
+    """Is the DONE instruction line among the message step's `lines`? (reads the draft only when there are lines)"""
+    return bool(lines) and _lines("Instruction lines attached")["DONE"] in lines
+
+
 def _fill(template, **kw):
     for k, v in kw.items():  # plain replace: the rules and messages contain braces and must not be format()ed
         template = template.replace("{" + k + "}", v)

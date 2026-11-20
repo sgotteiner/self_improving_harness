@@ -28,7 +28,7 @@ class Gate(unittest.TestCase):
         import alllessons, brain
         ids = list(alllessons.lessons())[:2]
         ans = "\n".join(f"VIOLATION {c} | broke {c}, fix it" for c in ids)
-        with mock.patch.object(ctx, "enabled", side_effect=lambda s: s == "recall-all-lessons"), mock.patch.object(gate.verdicts, "log"), \
+        with mock.patch.object(ctx, "enabled", side_effect=lambda s: s == "recall-all-lessons"), mock.patch.object(gate.verdicts, "log"), mock.patch("shadow.record"), \
                 mock.patch.object(ctx, "last_turn", return_value=("done, works", [])), mock.patch.object(brain, "ask", return_value=(ans, 1)) as ask:
             found = gate.check("x")
         self.assertEqual([c for c, _ in found], ids)

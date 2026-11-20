@@ -24,13 +24,13 @@ def docs(history=True, fields=FIELDS, skip=()):
     return out
 
 
-def search(query, k=3, method="hybrid", backend=embed.DEFAULT, history=True, fields=FIELDS, skip=()):
-    """Return [(score, id)] best first. Score scale differs per method."""
+def search(query, k=3, method="hybrid", backend=embed.DEFAULT, history=True, fields=FIELDS, skip=(), cache_query=True):
+    """Return [(score, id)] best first. Score scale differs per method. cache_query=False: the query's vectors are not stored."""
     if method != "emb" and not isinstance(query, str):
         query = "\n".join(query)
     if method == "bm25":
         return index.search(query, k)
-    emb = sorted(embed.scores(query, docs(history, fields, skip), backend).items(), key=lambda x: -x[1])
+    emb = sorted(embed.scores(query, docs(history, fields, skip), backend, cache_query).items(), key=lambda x: -x[1])
     if method == "emb":
         return [(s, c) for c, s in emb[:k]]
     bm = index.search(query, N)

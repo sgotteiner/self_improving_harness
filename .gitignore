@@ -53,6 +53,9 @@ node_modules/
 /scripts/recall/results/hook.log
 # local measurement: every gate verdict, and the replay answers he is asked to mark
 /scripts/recall/results/gate_verdicts.jsonl
+# shadow-select log (carries transcript names) and the work-review state
+/scripts/recall/results/shadow_select.jsonl
+/scripts/recall/results/work_review.json
 /scripts/recall/results/*-judge-sheet.md
 /scripts/recall/results/*.stamp
 # drafts the main session discarded as false captures: kept so his words are recoverable, never pushed

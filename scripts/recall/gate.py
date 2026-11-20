@@ -49,6 +49,11 @@ def check_all(tp, text, tools):
         verdicts.log(tp, "lesson", "BLOCK", cid, ctx.hedged(why), tokens=tok)
     if not found:
         verdicts.log(tp, "lesson", "OK", tokens=tok)
+    try:  # after the verdict is logged; never changes it, never fails the gate
+        import shadow
+        shadow.record(tp, text, tools, [c for c, _ in found])
+    except Exception as e:
+        ctx.log(f"gate: shadow failed: {e!r}")
     return found or None
 
 

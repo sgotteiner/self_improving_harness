@@ -3,6 +3,7 @@ Run: python -I scripts/recall/tests/run_tests.py [module-name ...]   (exit 1 if 
 import os, sys, tempfile, unittest
 
 os.environ["RECALL_VERDICT_LOG"] = os.path.join(tempfile.mkdtemp(), "gate_verdicts.jsonl")  # the tests never write the real verdict log
+os.environ["RECALL_SHADOW_LOG"] = os.path.join(tempfile.mkdtemp(), "shadow_select.jsonl")  # nor the shadow-select log
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, ".."))

@@ -69,5 +69,13 @@
   "graph-recall": {
     "enabled": false,
     "about": "cases as a graph (scripts/recall/graph.py): a case = a lesson node, each cases/history block = a path (situation, what was done, what he did not like). On: the recall hook matches his message against situation nodes and injects the traced path, the output gate matches the turn against what-was-done nodes and shows the past complaint to its brain, capture attaches a repeat to every lesson it matches instead of drafting a near-duplicate. Off = the flat retrieval. Measured by scripts/recall/eval_mechanism.py"
+  },
+  "shadow-select": {
+    "enabled": true,
+    "about": "on each gate call, after the real all-lessons check, the embedding path (retrieve.py, top-k, RELEVANCE_MIN, no model call) runs in shadow and one line goes to results/shadow_select.jsonl; `python -I scripts/recall/shadow.py report` compares it with what all-lessons named; never changes the verdict"
+  },
+  "work-learning": {
+    "enabled": true,
+    "about": "a detached background review (workreview.py) of the work since the last review, at his done (the message step's DONE) and every 10 human turns; drafts at most one lesson (source work) through patchfirst, so it reaches him only as the proposal line"
   }
 }
