@@ -3,7 +3,7 @@ runs `capture.py write <json>` (write()); capowed.py tracks that it did."""
 import datetime, json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import capowed, clean, ctx, history, index, pending
+import capowed, capstats, clean, ctx, history, index, pending
 
 PENDING = os.path.join(index.CASES, "_pending")
 SCANNED = ("situation", "did", "disliked", "lesson", "slug")  # his_words stays local (history.db, the gitignored pending draft)
@@ -51,7 +51,17 @@ def none(why, kind="correction"):
         return False, "give the reason it is not a mistake"
     ctx.log(f"capture: {kind} settled as not a mistake: {why.strip()}")
     capowed.pay(kind)
+    if kind == "gate":
+        _count(lambda: [capstats.bump(l, "incorrect") for l in capowed.settle_rest()])
     return True, "logged, no case written"
+
+
+def _count(f):
+    """A failed count never fails a write or a settlement that already happened."""
+    try:
+        f()
+    except Exception as e:
+        ctx.log(f"capture: count failed: {e!r}")
 
 
 def _find(cid):
@@ -75,6 +85,8 @@ def write(d):
         return False, f"missing or empty: {', '.join(miss)} (an unknown part is \"(not stated)\")"
     if lid and not _find(lid):
         return False, f"no lesson with id {lid!r}"
+    if src == "gate" and capowed.check_gate(lid):
+        return False, capowed.check_gate(lid)
     hits = [f"{k}: {v}" for k in SCANNED for v in clean.violations(str(d.get(k, "")), strict=True)]
     if hits:
         return False, "privacy scan hit, rewrite in general words: " + "; ".join(hits)
@@ -83,6 +95,7 @@ def write(d):
     if lid:
         history.record(_find(lid), src, raw, clean_text=c)
         capowed.pay(src)
+        _count(lambda: capstats.bump(lid, "missed") if src != "gate" else capowed.settle_one(lid) and capstats.bump(lid, "correct"))
         return True, f"occurrence recorded on {lid}"
     slug = pending.slugify(d["slug"], "captured-mistake")
     if d.get("approved") is not True:  # no drafts: only his yes adds a lesson

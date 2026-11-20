@@ -36,19 +36,64 @@ def _save(es):
     json.dump(es, open(OWED, "w", encoding="utf-8"))
 
 
-def owe(kind, tp, prompt=None):
+def owe(kind, tp, prompt=None, lesson=None):
+    """lesson (a gate marker): the lesson the block was on, kept so a false-alarm settlement knows it; several in one block add up."""
+    old = [e for e in _load() if e["kind"] == kind and e["key"] == key(tp, prompt) and not e["paid"]]
+    ls = sorted({l for e in old for l in e.get("lessons", [])} | ({lesson} if lesson else set()))
+    done = sorted({l for e in old for l in e.get("settled", [])})
     es = [e for e in _load() if not (e["kind"] == kind and e["key"] == key(tp, prompt))]
-    _save(es + [{"kind": kind, "tp": tp, "key": key(tp, prompt), "ts": time.time(), "paid": False, "blocked": False}])
+    _save(es + [{"kind": kind, "tp": tp, "key": key(tp, prompt), "ts": time.time(), "paid": False, "blocked": False, "lessons": ls, "settled": done}])
 
 
 def pay(kind):
-    """A successful write: the newest unpaid marker of that kind is paid."""
-    es = _load()
+    """A successful write: the newest unpaid marker of that kind is paid and returned (None if there was none)."""
+    es, paid = _load(), None
     for e in reversed(es):
         if e["kind"] == kind and not e["paid"]:
-            e["paid"] = True
+            e["paid"], paid = True, e
             break
     _save(es)
+    return paid
+
+
+def _gates():
+    """The gate markers of the last day, newest first (a paid one too: its lessons may still be unsettled for the counts)."""
+    return [e for e in reversed(_load()) if e["kind"] == "gate"]
+
+
+def check_gate(lid):
+    """Refusal text if gate blocks are still open and none of them named lid; else None."""
+    ms = _gates()
+    named = {l for e in ms for l in e.get("lessons", [])}
+    open_ = sorted({l for e in ms for l in e.get("lessons", []) if l not in e.get("settled", [])})
+    if open_ and lid not in named:
+        return f"the gate block named {', '.join(open_)}, not {lid!r}: write source gate with one of those ids, or --none --gate"
+    return None
+
+
+def settle_one(lid):
+    """A gate catch of lid recorded: True if it should count (the newest marker naming it had it unsettled, or no marker names it)."""
+    es = _load()
+    for e in reversed(es):
+        if e["kind"] == "gate" and lid in e.get("lessons", []):
+            if lid in e.get("settled", []):
+                continue
+            e["settled"] = e.get("settled", []) + [lid]
+            _save(es)
+            return True
+    return not any(lid in e.get("lessons", []) for e in es if e["kind"] == "gate")
+
+
+def settle_rest():
+    """A false alarm: the unsettled lessons of the newest gate marker that has any (the one the block came from); all settled now."""
+    es = _load()
+    for e in reversed(es):
+        left = [l for l in e.get("lessons", []) if l not in e.get("settled", [])] if e["kind"] == "gate" else []
+        if left:
+            e["settled"] = e.get("settled", []) + left
+            _save(es)
+            return left
+    return []
 
 
 def settle(tp, active):

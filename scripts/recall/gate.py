@@ -124,7 +124,7 @@ def main():
         if rec:
             try:
                 import capowed
-                capowed.owe("gate", tp)
+                capowed.owe("gate", tp, lesson=cid)
             except Exception as e:
                 ctx.log(f"gate: capture marker failed: {e!r}")
         reasons.append(f"Output gate (cases/{cid}.md): {why} Fix this now, then finish.{rec}")
