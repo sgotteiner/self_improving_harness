@@ -1,12 +1,15 @@
 """What a proposal does when he says yes (apply) or not (drop). Kinds and their data:
   new-lesson        {slug, lesson, situation, did, disliked, his_words, source, sids?}  -> a lesson file via casesave.approve
-  edit | revert     {lesson_id, text, sids?}                       -> the lesson's wording is replaced (revert: the earlier wording)
+  edit              {lesson_id, text, sids?}                       -> the lesson's wording is replaced
+  revert            {lesson_id, text, of, restore?, moved?}        -> the earlier wording; of a merge: `restore` = the archived lessons come back,
+                                                                      `moved` = {sid: lesson id} their situations go back to
   merge             {into, from: [ids], text, sids?}               -> `into` gets `text`, the others' situations are relinked, they are archived
   retire-situation  {sid}                                          -> the situation is retired
   retire-lesson     {lesson_id}                                    -> the lesson is archived
 `sids` = situations (status proposed) that wait with the proposal: his yes makes them active, anything else (a failed apply too)
 retires them. A merge is all or nothing: a failure puts every lesson file and its stats back.
-Nothing is deleted: an archived lesson moves to cases/_archive/ with its stats (<id>.stats.json), retired situations stay in the store."""
+An applied edit | merge | revert records in its data `old` (the wording before), `stats_at` (the lesson's counts) and `applied` (the day),
+for cleanup.py's revert rule. Nothing is deleted: an archived lesson moves to cases/_archive/ with its stats (<id>.stats.json), retired situations stay in the store."""
 import datetime, json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -47,8 +50,10 @@ def _archive(cid):
     return stats
 
 
-def _unarchive(cid, stats):
+def _unarchive(cid, stats=None):
+    """The lesson file and its stats back from cases/_archive/ (stats None: the ones kept beside it)."""
     out = os.path.join(index.CASES, ARCHIVE_DIR)
+    stats = json.loads(mdfile.read(os.path.join(out, cid + ".stats.json"))) if stats is None else stats
     os.replace(os.path.join(out, cid + ".md"), _file(cid))
     os.remove(os.path.join(out, cid + ".stats.json"))
     capstats.put(cid, stats)
@@ -66,11 +71,29 @@ def _merge(d):
         _set_lesson(into, d["text"])
         for cid in frm:
             done.append((cid, _archive(cid)))
+        d["moved"] = {r["sid"]: r["lesson_id"] for r in situations.read() if r["lesson_id"] in frm}
         situations.relink(frm, into)
     except BaseException:
         for cid, stats in reversed(done):
             _unarchive(cid, stats)
         mdfile.write_atomic(_file(into), saved)
+        raise
+
+
+def _revert(d):
+    """A revert of a merge also brings back the archived lessons (`restore`) and their situations (`moved`); all or nothing."""
+    cid, back = d["lesson_id"], list(d.get("restore", []))
+    saved, done = mdfile.read(_file(cid)), []
+    try:
+        _set_lesson(cid, d["text"])
+        for c in back:
+            _unarchive(c)
+            done.append(c)
+        situations.restore(d.get("moved", {}))
+    except BaseException:
+        for c in reversed(done):
+            _archive(c)
+        mdfile.write_atomic(_file(cid), saved)
         raise
 
 
@@ -85,12 +108,22 @@ def _new(d):
         raise RuntimeError(f"approve of {d['slug']} failed")
 
 
+def _remember(d, cid):
+    """What cleanup.py needs to judge an edit later (kept in the applied proposal's record): the wording before, the lesson's
+    counts and the day at apply time."""
+    d.update(old=index.parse(_file(cid)).get("lesson", ""), stats_at=capstats.get(cid), applied=str(datetime.date.today()))
+
+
 def apply(r):
     k, d = r["kind"], r["data"]
+    if k in ("edit", "merge", "revert"):
+        _remember(d, d["into"] if k == "merge" else d["lesson_id"])
     if k == "new-lesson":
         _new(d)
-    elif k in ("edit", "revert"):
+    elif k == "edit":
         _set_lesson(d["lesson_id"], d["text"])
+    elif k == "revert":
+        _revert(d)
     elif k == "merge":
         _merge(d)
     elif k == "retire-situation":

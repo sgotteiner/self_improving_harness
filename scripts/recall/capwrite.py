@@ -3,7 +3,7 @@ runs `capture.py write <json>` (write()); capowed.py tracks that it did."""
 import datetime, json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import capowed, capstats, clean, ctx, history, index, patchfirst, pending
+import capowed, capstats, clean, ctx, history, index, patchfirst, pending, situtrace
 
 PENDING = os.path.join(index.CASES, "_pending")
 SCANNED = ("situation", "did", "disliked", "lesson", "slug")  # his_words stays local (history.db, the gitignored pending draft)
@@ -96,6 +96,8 @@ def write(d):
         history.record(_find(lid), src, raw, clean_text=c)
         capowed.pay(src)
         _count(lambda: capstats.bump(lid, "missed") if src != "gate" else capowed.settle_one(lid))
+        if src == "correction":  # a missed repeat: which situation of the lesson was it (the one just stored is left out)
+            situtrace.fire(lid, f"{d['situation']} The assistant did: {d['did']}", lambda r: (r["situation"], r["did"]) == (d["situation"], d["did"]))
         return True, f"occurrence recorded on {lid}"
     slug = pending.slugify(d["slug"], pending.DEFAULT_SLUG)
     if d.get("approved") is not True:  # no drafts: only his yes adds a lesson (or edits the lesson this one repeats)

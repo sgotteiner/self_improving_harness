@@ -37,6 +37,16 @@ def bump(lesson_id, key):
     _modify(change, f"count {lesson_id} {key}")
 
 
+def get(lesson_id=None):
+    """The counts of one lesson (all four keys), or of every lesson {id: counts} when none is given. Read only."""
+    try:
+        s = json.loads(mdfile.read(os.path.join(index.CASES, "stats.json")))
+    except FileNotFoundError:
+        s = {}
+    full = lambda c: {k: c.get(k, 0) for k in KEYS}
+    return full(s.get(lesson_id, {})) if lesson_id else {k: full(v) for k, v in s.items()}
+
+
 def take(lesson_id):
     """Remove a lesson's counts from stats.json and return them ({} when it had none): an archived lesson keeps them with it."""
     return _modify(lambda s: s.pop(lesson_id, {}), f"take {lesson_id}") or {}

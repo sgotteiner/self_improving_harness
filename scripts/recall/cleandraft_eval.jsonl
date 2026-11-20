@@ -1,0 +1,2 @@
+{"label": "different kinds: design without tracking vs context when asking", "expect": "reject", "lessons": ["design-for-no-tracking", "give-context-when-asking-him"]}
+{"label": "true duplicate: report-without-testing vs a paraphrase", "expect": "pass", "lessons": ["report-without-testing", {"id": "say-fixed-after-running", "lesson": "Say something is fixed only after running it and showing the output.", "right": "Run it, then report the command and its real output; if it was not run, say it is unverified."}]}

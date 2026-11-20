@@ -92,6 +92,11 @@ def relink(old_ids, new_id):
     return _edit(lambda r: r["lesson_id"] in old_ids, lesson_id=new_id)
 
 
+def restore(moved):
+    """Undo a merge's relink: {sid: lesson id it belonged to}."""
+    return _edit(lambda r: r["sid"] in moved, lesson_id=lambda r: moved[r["sid"]])
+
+
 def seed():
     """Add the hand-written `situation:` lines of every lesson the store lacks (a line already there, same lesson, source,
     situation, did, is not added twice). The lines of history.db come through history.py sync. Returns the number added."""

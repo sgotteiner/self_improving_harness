@@ -5,7 +5,7 @@ import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ctx, views
 
-LESSONS_MAX = 12000  # chars of the lessons text; above it we log and still send it all (no silent cut): time to switch the slot off
+SIZE_LIMIT = 2200  # chars of the lessons text; above it cleanup.py proposes merges and rewords, and we still send it all (no silent cut)
 NAMED_MAX = 5  # at most this many lessons reach the main session per call; more are logged, so its context stays small
 
 RECALL = ("Recent turns of a coding session:\n{ctx}\n\nOwner's new message: {prompt}\n\nLessons from earlier mistakes of this "
@@ -25,11 +25,15 @@ GATE = ("Lessons from earlier mistakes of this assistant:\n{lessons}\n\nContext.
 lessons = views.lessons  # {id: (date, lesson, right)} of every approved case
 
 
+def text(ls):
+    return "\n".join(f"- {c}: Lesson: {l} Right: {r}" for c, (_, l, r) in ls.items())
+
+
 def block(ls):
-    text = "\n".join(f"- {c}: Lesson: {l} Right: {r}" for c, (_, l, r) in ls.items())
-    if len(text) > LESSONS_MAX:
-        ctx.log(f"alllessons: lessons text is {len(text)} chars, over {LESSONS_MAX}; sent whole")
-    return text
+    t = text(ls)
+    if len(t) > SIZE_LIMIT:
+        ctx.log(f"alllessons: lessons text is {len(t)} chars, over {SIZE_LIMIT}; sent whole")
+    return t
 
 
 def named(out, ls, head=""):

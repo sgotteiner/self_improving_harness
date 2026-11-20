@@ -3,7 +3,7 @@ human message is judged by the message step's one model call (delegate.input_ste
 RIGHT = right+1, WRONG = wrong+1, NONE or no answer = ignored+1; then the awaiting entries of that transcript are cleared."""
 import json, os, re, time
 
-import capstats, ctx, propread
+import capstats, ctx, propread, situtrace
 
 AWAITING = os.path.join(ctx.ROOT, "scripts", "recall", "results", "gate_awaiting.json")
 DAY = 86400  # an entry older than this is dropped unread
@@ -79,7 +79,10 @@ def settle(tp, aw, out):
         said.setdefault(m.group(1).strip("`*<>.,").lower(), m.group(2).upper())
     for e in aw:
         try:
-            capstats.bump(e["lesson"], COUNT_KEY[said.get(e["lesson"].lower(), "NONE")])
+            verdict = said.get(e["lesson"].lower(), "NONE")
+            capstats.bump(e["lesson"], COUNT_KEY[verdict])
+            if verdict == "RIGHT":  # the lesson fired: which situation was it (fails open)
+                situtrace.fire(e["lesson"], e["why"])
         except Exception as ex:
             ctx.log(f"capverdict: count failed: {ex!r}")
     _save([e for e in _load() if e["tp"] != tp])

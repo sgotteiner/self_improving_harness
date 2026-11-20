@@ -3,7 +3,7 @@ import datetime, os, tempfile, unittest
 from unittest import mock
 
 import helpers as h
-import brain, capowed, capverdict, capwrite, casesave, history, index, proposals
+import brain, capowed, capverdict, capwrite, casesave, ctx, history, index, proposals
 
 LESSON = '---\nid: {i}\ndate: 2026-11-01\nsituation:\n  - "hand"\nright: "R-{i}"\nlesson: "L-{i}"\n---\n'
 GOOD = {"situation": "reporting a fix", "did": "said fixed untested", "disliked": "(not stated)", "his_words": "test it first",
@@ -30,7 +30,8 @@ class Base(unittest.TestCase):
                   mock.patch.object(proposals, "OFF_MARK", os.path.join(self.d, "off")),
                   mock.patch.object(proposals.ctx, "enabled", return_value=True),
                   mock.patch.object(history, "DB", os.path.join(self.d, "h.db")), mock.patch.object(capowed, "OWED", os.path.join(self.d, "o.json")),
-                  mock.patch.object(capverdict, "AWAITING", os.path.join(self.d, "aw.json"))):
+                  mock.patch.object(capverdict, "AWAITING", os.path.join(self.d, "aw.json")),
+                  mock.patch.object(ctx, "LOG", os.path.join(self.d, "hook.log"))):  # the tests never write the real hook.log
             p.start()
             self.addCleanup(p.stop)
 

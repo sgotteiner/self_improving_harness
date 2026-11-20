@@ -79,6 +79,7 @@ def main():
         kind_lines = stage("delegation", lambda: __import__("delegate").input_step(prompt, tp)[0], [])
         drafted = next((l for l in kind_lines if l.startswith("Capture:")), None)
     # the day's proposal line (proposals.py shows none when the step that reads his yes, or capture, is off)
+    stage("cleanup", lambda: __import__("cleanrun").start(), None)  # the lessons' upkeep: weekly or over the size limit, detached
     kind_lines += stage("proposal", lambda: [l for l in (__import__("proposals").line(tp),) if l], [])
     if ctx.enabled("decision-capture"):  # diary drafts: collected silently, like captured mistakes
         if drafted:  # the same message was a correction of his assistant, not a design decision

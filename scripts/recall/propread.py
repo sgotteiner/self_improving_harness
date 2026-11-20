@@ -66,6 +66,6 @@ def settle(rows, out):
             except Exception as e2:
                 ctx.log(f"proposals: situations of {r['pid']} not retired: {e2!r}")
         try:
-            pq.change(lambda rs: [x.update(status=status) for x in rs if x["pid"] == r["pid"]])
+            pq.change(lambda rs: [x.update(status=status, data=r["data"]) for x in rs if x["pid"] == r["pid"]])
         except Exception as e:
             ctx.log(f"proposals: status of {r['pid']} not stored: {e!r}")
