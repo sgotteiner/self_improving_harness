@@ -15,8 +15,7 @@ PATH = os.path.join(ctx.ROOT, "scripts", "recall", "results", "shadow_select.jso
 
 
 def path():
-    return os.environ.get("RECALL_SHADOW_LOG") or PATH  # the tests point it at a temp file
-
+    return os.environ.get("RECALL_SHADOW_LOG") or PATH
 
 def top(text, tools):
     """[[lesson id, cosine]] best first: the embedding search over the lessons and their active situations, above RELEVANCE_MIN."""

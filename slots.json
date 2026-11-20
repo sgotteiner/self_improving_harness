@@ -66,6 +66,12 @@
     "pattern": "(?:(?:time|nohup|env|exec|command)\\s+|timeout\\s+(?:-\\S+\\s+)*\\d+\\S*\\s+|\\w+=\\S*\\s+)*(?:(?:\\S*/)?(?:py|python3?)(?:\\.exe)?(?:\\s+-\\w+)*\\s+(?:-m\\s+(?:pytest|unittest|eval_\\w+|test[_-]\\w+)|\\S*(?:run_chosen_checks|run_tests|eval_\\w+|test[_-]\\w+|\\w+_test|replay)\\.py)|pytest|vitest|jest|(?:npm|pnpm|yarn)\\s+(?:run\\s+)?test|make\\s+test|cargo\\s+test|go\\s+test|(?:bash|sh)\\s+\\S*test\\S*\\.sh|\\./\\S*test\\S*\\.sh)",
     "about": "the owner's rule 2026-11-16: a test or eval run gets at most 1 minute, then the agent stops and asks him whether to continue. Hooks in scripts/testlimit.py: PreToolUse on Bash wraps a command that runs a test (a segment starting with `pattern`) in `timeout`; his short yes on his next message (UserPromptSubmit) approves re-running that exact cut command once, within 30 min"
   },
+  "test-guard": {
+    "enabled": true,
+    "minutes": 60,
+    "pattern": "(?:^|/)tests?/|(?:^|/)test_[^/]*\\.py$|_test\\.py$|\\.(?:test|spec)\\.(?:js|ts)$|(?:^|/)conftest\\.py$",
+    "about": "the owner's rule: no test file without his approval. scripts/testguard.py: PreToolUse on Write|Edit|MultiEdit|NotebookEdit and Bash blocks a write into a path matching `pattern` (exit 2) unless this session has an approval; his short yes on his next message (UserPromptSubmit), after the agent's one-line `check: <what> — prevents <failure> — yes / ignore`, approves for `minutes`. Applies to subagents. Fails open on its own errors (state/test-guard.log)"
+  },
   "graph-recall": {
     "enabled": false,
     "about": "cases as a graph (scripts/recall/graph.py): a case = a lesson node, each cases/history block = a path (situation, what was done, what he did not like). On: the recall hook matches his message against situation nodes and injects the traced path, the output gate matches the turn against what-was-done nodes and shows the past complaint to its brain, capture attaches a repeat to every lesson it matches instead of drafting a near-duplicate. Off = the flat retrieval. Measured by scripts/recall/eval_mechanism.py"

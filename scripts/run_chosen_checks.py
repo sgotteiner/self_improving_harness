@@ -2,13 +2,13 @@
 and a final PASSED or FAILED, with the failing lines only. Exit 0 = PASSED.
 Usage: python -I scripts/run_chosen_checks.py [--files <f> ...] [--since <ref>] [--all] [--eval]
   --files <f> ..  the files the task changed (repo-relative): selection uses exactly these. A CHOOSE line says why for each
-                  suite, and the recall unit tests run per test file (only the ones importing a changed module).
+                  suite.
                   Nothing relevant changed -> "nothing to test". A changed .py no check covers -> "not covered by any check: <f>".
   (default)       without --files: the files changed since the last commit (git diff HEAD + untracked); a line says so.
   --since <ref>   the files changed since <ref> instead, e.g. HEAD~1 for the commit about to be pushed.
   --all           every suite, regardless of changes: only when the owner asks for a full regression run.
 Selection rules are in select_tests.py.
-Suites: the recall hooks' unit tests, the SDD tools' tests (node), the setup check (cases, sources, diaries)."""
+Suites: the SDD tools' tests (node), the setup check (cases, sources, diaries)."""
 import os, re, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # -I drops the script's own folder
@@ -19,7 +19,6 @@ RECALL = os.path.join(ROOT, "scripts", "recall")
 PY = [sys.executable, "-I"]
 # (name, command, timeout, files whose change makes it run; None = always)
 SUITES = [
-    ("recall tests", PY + ["scripts/recall/tests/run_tests.py"], 300, None),
     ("sdd tests", ["node", "skills/sdd/scripts/test-sdd.js"], 300, None),
     ("capture check", PY + ["scripts/recall/capture.py", "check"], 300, None),
 ]

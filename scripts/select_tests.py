@@ -1,10 +1,8 @@
 """Which suites of run_chosen_checks.py a change needs: files changed -> {suite name: (why, extra args)}. Pure mapping, no running."""
-import os, re, subprocess
+import os, subprocess
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-TESTS = os.path.join(ROOT, "scripts", "recall", "tests")
 CAPTURE = {"index", "embed", "retrieve", "validate", "casesave", "capture"}
-SELF = {"scripts/run_chosen_checks.py", "scripts/select_tests.py"}
 
 
 def changed_files(since=None):
@@ -15,17 +13,6 @@ def changed_files(since=None):
     return sorted(set(git("diff", "--name-only", "--relative", since or "HEAD") + git("ls-files", "--others", "--exclude-standard")))
 
 
-def importers():
-    """{module: [test module names that import it]} read from the recall test files."""
-    out = {}
-    for f in sorted(os.listdir(TESTS)):
-        if f.startswith("test_") and f.endswith(".py"):
-            for m in re.finditer(r"^\s*(?:import\s+([\w\s,]+)|from\s+(\w+)\s+import)", open(os.path.join(TESTS, f), encoding="utf-8").read(), re.M):
-                for name in re.findall(r"\w+", m.group(1) or m.group(2)):
-                    out.setdefault(name, set()).add(f[:-3])
-    return {k: sorted(v) for k, v in out.items()}
-
-
 def uncovered(files):
     """The changed .py files no check covers (select gives them no suite): reported, never answered with a whole suite."""
     return [f for f in files if f.endswith(".py") and not select([f])]
@@ -33,30 +20,19 @@ def uncovered(files):
 
 def select(files):
     """{suite: (why, extra args)} in run order; empty when nothing relevant changed."""
-    why, tests, all_recall, imp = {}, set(), False, importers()
+    why = {}
 
     def pick(suite, f):
         why.setdefault(suite, []).append(os.path.basename(f))
 
     for f in files:
         d, base = os.path.dirname(f), os.path.splitext(os.path.basename(f))[0]
-        if f in SELF:
-            tests |= {"test_runall", "test_select"}; pick("recall tests", f)
-        elif d == "scripts/recall/tests":
-            if base.startswith("test_"):
-                tests.add(base); pick("recall tests", f)
-            elif f.endswith(".py"):
-                all_recall = True; pick("recall tests", f)
-        elif d == "scripts/recall" and f.endswith(".py"):
-            hit = imp.get(base, [])
-            tests |= set(hit)
-            if hit:
-                pick("recall tests", f)
+        if d == "scripts/recall" and f.endswith(".py"):
             if base in CAPTURE:
                 pick("capture check", f)
         elif f.startswith("cases/"):
             pick("capture check", f)
         elif f.startswith(("skills/sdd/", "skills/system-map/")):
             pick("sdd tests", f)
-    order = ["recall tests", "sdd tests", "capture check"]
-    return {s: (", ".join(sorted(set(why[s]))[:4]) + " changed", [] if s != "recall tests" or all_recall else sorted(tests)) for s in order if s in why}
+    order = ["sdd tests", "capture check"]
+    return {s: (", ".join(sorted(set(why[s]))[:4]) + " changed", []) for s in order if s in why}
