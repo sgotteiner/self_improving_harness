@@ -78,6 +78,8 @@ def main():
     if ctx.enabled("delegation-hook"):  # one call: his kind of message; a correction (slot capture) makes the session write the case
         kind_lines = stage("delegation", lambda: __import__("delegate").input_step(prompt, tp)[0], [])
         drafted = next((l for l in kind_lines if l.startswith("Capture:")), None)
+    # the day's proposal line (proposals.py shows none when the step that reads his yes, or capture, is off)
+    kind_lines += stage("proposal", lambda: [l for l in (__import__("proposals").line(tp),) if l], [])
     if ctx.enabled("decision-capture"):  # diary drafts: collected silently, like captured mistakes
         if drafted:  # the same message was a correction of his assistant, not a design decision
             ctx.log("hook: decision detection skipped, mistake capture asked the session to write a case")

@@ -1,48 +1,48 @@
 """cases/stats.json: per lesson id how often he judged a gate block right or wrong, left it unanswered (ignored; capverdict.py),
-or had to correct a repeat himself (missed; capwrite.py). One small file, no db; counting only, nothing else reads it. Written atomically."""
-import json, os, time
+or had to correct a repeat himself (missed; capwrite.py); an archived lesson's counts leave with it (take). One small file, no db; counting only, nothing else reads it. Written atomically."""
+import json, os
 
 import ctx, index, mdfile
 
 KEYS = ("right", "wrong", "missed", "ignored")
 
 
-def _locked(lock):
-    """Take the lock file (retry ~3s; a lock older than 10s is a dead hook's and is broken)."""
-    for _ in range(60):
-        try:
-            os.close(os.open(lock, os.O_CREAT | os.O_EXCL))
-            return True
-        except FileExistsError:
-            try:
-                if time.time() - os.path.getmtime(lock) > 10:
-                    os.remove(lock)
-            except OSError:
-                pass
-            time.sleep(0.05)
-    return False
-
-
-def bump(lesson_id, key):
+def _modify(change, what):
+    """Run change(stats dict) under the file lock and write the result atomically; returns its value (None when skipped)."""
     path = os.path.join(index.CASES, "stats.json")
-    lock = path + ".lock"
-    if not _locked(lock):
-        ctx.log(f"capstats: locked, count skipped: {lesson_id} {key}")
-        return
-    try:
+    with mdfile.held(path + ".lock") as got:
+        if not got:
+            ctx.log(f"capstats: locked, skipped: {what}")
+            return None
         try:
             s = json.loads(mdfile.read(path))
         except FileNotFoundError:
             s = {}
-        except (OSError, ValueError) as e:  # never reset a file we cannot read: leave it and skip this count
-            ctx.log(f"capstats: stats.json unreadable, left untouched, count skipped: {e!r}")
-            return
+        except (OSError, ValueError) as e:  # never reset a file we cannot read: leave it and skip this change
+            ctx.log(f"capstats: stats.json unreadable, left untouched, skipped: {what}: {e!r}")
+            return None
+        out = change(s)
+        mdfile.write_atomic(path, json.dumps(s, indent=1, sort_keys=True))
+        return out
+
+
+def bump(lesson_id, key):
+    def change(s):
         c = s.setdefault(lesson_id, {})
         for old in ("correct", "incorrect"):  # migration: the keys this file had before
             c.pop(old, None)
         for k in KEYS:
             c.setdefault(k, 0)
         c[key] += 1
-        mdfile.write_atomic(path, json.dumps(s, indent=1, sort_keys=True))
-    finally:
-        os.remove(lock)
+    _modify(change, f"count {lesson_id} {key}")
+
+
+def take(lesson_id):
+    """Remove a lesson's counts from stats.json and return them ({} when it had none): an archived lesson keeps them with it."""
+    return _modify(lambda s: s.pop(lesson_id, {}), f"take {lesson_id}") or {}
+
+
+def put(lesson_id, counts):
+    """Give a lesson its counts back (undoes take when an archive fails)."""
+    if counts:
+        _modify(lambda s: s.__setitem__(lesson_id, counts), f"put {lesson_id}")

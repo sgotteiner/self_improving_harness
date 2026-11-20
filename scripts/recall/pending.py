@@ -5,11 +5,19 @@ import json, os, re
 import ctx, index
 
 TODO = os.path.join(ctx.ROOT, "tasks", "todo.md")
+DEFAULT_SLUG = "captured-mistake"  # the id of a lesson whose session gave no usable slug
 
 
 def q(s):
     """A value as a double-quoted one-line frontmatter scalar."""
     return '"' + str(s).replace('"', "'").replace("\n", " ").strip() + '"'
+
+
+def case_text(slug, d, raw, date):
+    """The file text of a lesson captured by the session (capwrite.write fields: lesson, situation, did); the owner's raw words stay local."""
+    return (f"---\nid: {slug}\ndate: {date}\nlevel: advice\nhis_words: {q(raw)}\nsituation:\n  - {q(d['situation'])}\n"
+            f"wrong: {q(d['did'])}\nright: {q('(not stated)')}\nlesson: {q(d['lesson'])}\nreplay: {q('(not stated)')}\n"
+            f"pass_if:\n  - {q('(not stated)')}\noccurrences: 0\n---\n")
 
 
 def json_of(s):

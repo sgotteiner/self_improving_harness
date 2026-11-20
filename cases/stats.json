@@ -13,6 +13,12 @@
  },
  "decide-trivial-choices-dont-ask": {
   "ignored": 1,
+  "missed": 1,
+  "right": 0,
+  "wrong": 0
+ },
+ "give-context-when-asking-him": {
+  "ignored": 1,
   "missed": 0,
   "right": 0,
   "wrong": 0
@@ -20,6 +26,12 @@
  "report-without-testing": {
   "ignored": 0,
   "missed": 0,
+  "right": 0,
+  "wrong": 0
+ },
+ "scope-searches-by-known-context": {
+  "ignored": 0,
+  "missed": 1,
   "right": 0,
   "wrong": 0
  }

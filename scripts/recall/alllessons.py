@@ -3,7 +3,7 @@ instead of embedding retrieval picking candidates. Used by hook.py (his message)
 import os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx, index
+import ctx, views
 
 LESSONS_MAX = 12000  # chars of the lessons text; above it we log and still send it all (no silent cut): time to switch the slot off
 NAMED_MAX = 5  # at most this many lessons reach the main session per call; more are logged, so its context stays small
@@ -22,13 +22,7 @@ GATE = ("Lessons from earlier mistakes of this assistant:\n{lessons}\n\nContext.
         "'OK' or one line per clearly broken lesson: 'VIOLATION <id> | <one short sentence: what is wrong and what to do now>'.")
 
 
-def lessons():
-    """{id: (date, lesson, right)} of every approved case (cases/*.md)."""
-    out = {}
-    for f in index.case_files():
-        d = index.parse(f)
-        out[d.get("id") or os.path.basename(f)[:-3]] = (d.get("date", ""), d.get("lesson", ""), d.get("right", ""))
-    return out
+lessons = views.lessons  # {id: (date, lesson, right)} of every approved case
 
 
 def block(ls):

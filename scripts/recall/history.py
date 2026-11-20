@@ -1,17 +1,16 @@
 """Occurrence history: every repeat of a mistake, with the raw text, in a local SQLite file (gitignored).
 cases/*.md keep only `occurrences: <count>` and `last_seen: <date>`. Each occurrence also gets a cleaned version
-(clean.py: general wording, no names, paths or session ids) in column clean_text; sync() writes the cleaned ones of
-approved cases to cases/history/<case_id>.md, which is tracked and feeds retrieval. Raw text and transcript paths
-never leave this database. Cleaning runs in a detached process after each record (a brain call is too slow for the
-hook), and every later sync retries rows that failed."""
+(clean.py: general wording, no names, paths or session ids) in column clean_text. The cleaned ones of approved cases go into the
+store cases/situations.jsonl (situations.py, once per row id), and views.py generates cases/history/<case_id>.md from it (tracked,
+feeds retrieval). Raw text and transcript paths never leave this database. Cleaning runs in a detached process after each record
+(a brain call is too slow for the hook), and every later sync retries rows that failed and adds the cleaned rows the store lacks."""
 import datetime, json, os, re, sqlite3, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import index
+import ctx, index, situations, views
 
 DB = os.path.join(HERE, "history.db")
-OUT = os.path.join(index.CASES, "history")
 
 
 def _con():
@@ -24,13 +23,14 @@ def _con():
 
 
 def add(case_id, source, text, transcript="", date=None, clean_text=None):
-    """source: 'gate' (output gate block, text = its reason) or 'correction' (text = his words). clean_text: the session's own
+    """Returns the id of the new row. source: 'gate' (output gate block, text = its reason) or 'correction' (text = his words). clean_text: the session's own
     structured JSON, kept as is (no cleaning call)."""
     con = _con()
-    con.execute("INSERT INTO occurrence(date, case_id, source, text, transcript, clean_text) VALUES (?,?,?,?,?,?)",
-                (date or str(datetime.date.today()), case_id, source, text, transcript or "", clean_text))
+    occ = con.execute("INSERT INTO occurrence(date, case_id, source, text, transcript, clean_text) VALUES (?,?,?,?,?,?)",
+                      (date or str(datetime.date.today()), case_id, source, text, transcript or "", clean_text)).lastrowid
     con.commit()
     con.close()
+    return occ
 
 
 def bump(path, date=None):
@@ -46,7 +46,14 @@ def bump(path, date=None):
 
 
 def record(path, source, text, transcript="", clean_text=None):
-    add(os.path.basename(path)[:-3], source, text, transcript, clean_text=clean_text)
+    cid = os.path.basename(path)[:-3]
+    occ = add(cid, source, text, transcript, clean_text=clean_text)
+    if clean_text:  # the session's own cleaned text goes into the store now; if that fails, sync adds the row by its id
+        try:
+            c = json.loads(clean_text)
+            situations.add(cid, source, c["situation"], c["assistant_did"], c["disliked"], occ=occ)
+        except Exception as e:
+            ctx.log(f"history: situation not stored now, sync will add it: {e!r}")
     bump(path)
     spawn_sync()
 
@@ -70,9 +77,23 @@ def _lesson(cid):
     return ""
 
 
+def backfill(con):
+    """Add to the store every cleaned row of an approved lesson that it lacks. A row is there when its id (occ) is, or when an
+    older line (from before ids were kept) has the same lesson, source, situation and did. Returns the number added."""
+    ls, rows = views.lessons(), situations.read()
+    have_occ = {r.get("occ") for r in rows}
+    have = {(r["lesson_id"], r["source"], r["situation"], r["did"]) for r in rows}
+    n = 0
+    for i, date, cid, src, ct in con.execute("SELECT id, date, case_id, source, clean_text FROM occurrence WHERE clean_text LIKE '{%' ORDER BY id"):
+        c = json.loads(ct)
+        if cid in ls and i not in have_occ and (cid, src, c["situation"], c["assistant_did"]) not in have:
+            n += situations.add(cid, src, c["situation"], c["assistant_did"], c["disliked"], date, occ=i) is not None
+    return n
+
+
 def sync(clean_new=True):
-    """Clean every row without clean_text, then rewrite cases/history/<case>.md for approved cases.
-    Returns (cleaned, failed, files)."""
+    """Clean every row without clean_text, add the cleaned rows of approved cases the store lacks, then rewrite the generated
+    cases/history/<case>.md. Returns (cleaned, failed, files)."""
     import clean
     con = _con()
     done = failed = 0
@@ -87,33 +108,19 @@ def sync(clean_new=True):
                 done += 1
             else:
                 failed += 1
-    rows = con.execute("SELECT date, case_id, source, clean_text FROM occurrence WHERE clean_text LIKE '{%' "
-                       "ORDER BY id").fetchall()
+    try:
+        backfill(con)
+    except Exception as e:  # the next sync retries; the pages below still come from what the store has
+        ctx.log(f"history: backfill failed: {e!r}")
+        failed += 1
     con.close()
-    by = {}
-    for d, cid, src, t in rows:
-        if os.path.exists(os.path.join(index.CASES, cid + ".md")):  # pending or discarded cases are not published
-            c = json.loads(t)
-            by.setdefault(cid, []).append(
-                f"## {d} | {src}\n- situation: {c['situation']}\n- assistant did: {c['assistant_did']}\n"
-                f"- he did not like: {c['disliked']}\n- lesson: {_lesson(cid)}\n")
-    os.makedirs(OUT, exist_ok=True)
-    for cid, lines in by.items():
-        body = (f"# {cid}: real occurrences, cleaned\n\nGenerated by scripts/recall/history.py. One block per occurrence "
-                "in the case's structure; general wording, the raw words stay local. Each block is one recall example.\n\n"
-                + "\n".join(lines))
-        p = os.path.join(OUT, cid + ".md")
-        if not os.path.exists(p) or open(p, encoding="utf-8").read() != body:
-            open(p, "w", encoding="utf-8", newline="\n").write(body)
-    for f in os.listdir(OUT):  # a case that was deleted takes its history file with it
-        if f.endswith(".md") and f[:-3] not in by:
-            os.remove(os.path.join(OUT, f))
+    ids = views.pages()  # the pages come from the store, not from history.db
     try:  # encode the new examples now, so the first search does not pay for them
         import embed
-        embed.encode([t for cid in by for t in index.history_texts(cid)])
+        embed.encode([t for cid in ids for t in index.history_texts(cid)])
     except Exception:
         failed += 1
-    return done, failed, len(by)
+    return done, failed, len(ids)
 
 
 if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "sync":

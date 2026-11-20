@@ -5,7 +5,7 @@ import json, os, tempfile, unittest
 from unittest import mock
 
 import helpers as h
-import brain, capowed, capture, capwrite, delegate, clean, embed, history, index
+import brain, capowed, capture, capwrite, delegate, clean, embed, history, index, proposals
 
 GOOD = {"situation": "refactoring a script, he asked for a test", "did": "skipped it", "disliked": "(not stated)",
         "his_words": "I told you to test", "lesson": "run a test", "slug": "run-a-test"}
@@ -16,7 +16,8 @@ class Capwrite(unittest.TestCase):
         self.d = tempfile.mkdtemp()
         for o in (mock.patch.object(capwrite, "PENDING", os.path.join(self.d, "p")), mock.patch.object(capowed, "OWED", os.path.join(self.d, "owed.json")),
                   mock.patch.object(capwrite.history, "record"), mock.patch.object(capwrite.pending, "TODO", os.path.join(self.d, "todo.md")),
-                  mock.patch.object(embed, "scores", return_value={})):
+                  mock.patch.object(embed, "scores", return_value={}),
+                  mock.patch.object(proposals, "path", lambda: os.path.join(self.d, "q.jsonl"))):
             o.start()
             self.addCleanup(o.stop)
 
@@ -38,6 +39,7 @@ class Capwrite(unittest.TestCase):
             self.assertTrue(ok)
             self.assertIn("only his yes adds it", msg)
             self.assertEqual(os.listdir(cases), [])
+            self.assertEqual([r["kind"] for r in proposals.read()], ["new-lesson"])
             self.assertFalse(os.path.exists(os.path.join(self.d, "p", "run-a-test.md")))
             self.assertTrue(capwrite.write(dict(GOOD, approved=True))[0])
             self.assertTrue(os.path.exists(os.path.join(cases, "run-a-test.md")))
@@ -71,8 +73,8 @@ class Capwrite(unittest.TestCase):
         os.makedirs(cases)
         open(os.path.join(cases, "a-case.md"), "w", encoding="utf-8").write('---\nid: a-case\nlesson: "l"\n---\n')
         c = {"situation": "S-as-written", "assistant_did": "D-as-written", "disliked": "L-as-written"}
-        with mock.patch.object(history, "DB", os.path.join(self.d, "h.db")), mock.patch.object(history, "OUT", os.path.join(cases, "history")), \
-                mock.patch.object(index, "CASES", cases), mock.patch.object(history, "spawn_sync"), mock.patch.object(embed, "encode"), \
+        with mock.patch.object(history, "DB", os.path.join(self.d, "h.db")), mock.patch.object(index, "CASES", cases), \
+                mock.patch.object(history, "spawn_sync"), mock.patch.object(embed, "encode"), \
                 mock.patch.object(clean, "clean", side_effect=AssertionError("no Haiku rewrite")):
             history.add("a-case", "correction", "raw words", clean_text=json.dumps(c))
             history.sync()

@@ -69,7 +69,7 @@ def input_step(prompt, transcript):
     recent = "\n".join(l[:600] for l in recent)  # his new message may already be in the transcript: left out
     prev = f"{recent}\n\nThe assistant's previous full reply:\n{reply[-4000:] or '(none)'}\nIts tool calls: {'; '.join(tools) or 'none'}"
     import capverdict  # the same call also judges gate blocks awaiting his verdict
-    out, tok = capverdict.ask(transcript, _fill(_prompt("Input step"), prev=prev, prompt=prompt), "delegate-in")
+    out, tok = capverdict.ask(transcript, _fill(_prompt("Input step"), prev=prev, prompt=prompt), "delegate-in", reply)
     m = re.match(r"\W*([A-Z]+(?:-[A-Z]+)?)", out.upper())
     kind = m.group(1) if m else ""
     if kind not in INPUT_KINDS:

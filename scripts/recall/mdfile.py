@@ -1,7 +1,8 @@
 """Adding to a markdown file the safe way: line endings kept, the new text placed under its section, the file written
 through a temp file and replaced (never half written), and what was already there never edited."""
-import os, re, tempfile
+import contextlib, os, re, tempfile, threading, time
 
+LOCK_TRIES, LOCK_WAIT, LOCK_STALE = 60, 0.05, 10  # ~3 s of retries; a lock file older than 10 s is a dead hook's and is broken
 BOUNDARY = re.compile(r"^(?:---+[ \t]*\r?$|#{1,2} )", re.M)  # where a section ends: a rule or the next # / ## heading
 
 
@@ -19,6 +20,46 @@ def write_atomic(path, text):
     except BaseException:
         os.path.exists(tmp) and os.remove(tmp)
         raise
+
+
+def _break_stale(lock):
+    """Rename the lock to a name of our own (atomic: of several waiters one wins), then judge the file we got; a fresh lock
+    that was taken between the check and the rename is linked back."""
+    dead = f"{lock}.{os.getpid()}.{threading.get_ident()}.{time.time_ns()}.dead"
+    os.rename(lock, dead)
+    if time.time() - os.path.getmtime(dead) <= LOCK_STALE:
+        with contextlib.suppress(OSError):
+            os.link(dead, lock)
+    os.remove(dead)
+
+
+def locked(lock):
+    """Take the lock file `lock` (retries, breaks a stale one); False when it stayed taken."""
+    for _ in range(LOCK_TRIES):
+        try:
+            os.close(os.open(lock, os.O_CREAT | os.O_EXCL))
+            return True
+        except (FileExistsError, PermissionError):  # Windows: a lock file being deleted answers PermissionError, not "exists"
+            try:
+                if time.time() - os.path.getmtime(lock) > LOCK_STALE:
+                    _break_stale(lock)
+            except OSError:
+                pass
+            time.sleep(LOCK_WAIT)
+    return False
+
+
+@contextlib.contextmanager
+def held(lock):
+    """`with held(lock) as got:` -> got is False when the lock could not be taken; a taken lock is always released
+    (one a waiter already broke as stale is gone: not an error)."""
+    got = locked(lock)
+    try:
+        yield got
+    finally:
+        if got:
+            with contextlib.suppress(FileNotFoundError):
+                os.remove(lock)
 
 
 def insert_under(text, heading, block, new_before=None, rule=False):

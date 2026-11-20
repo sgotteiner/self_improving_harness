@@ -22,7 +22,7 @@ def _docs():
     out = {}
     for d, tag in ((index.CASES, ""), (PENDING, "_pending/")):
         for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
-            if f.endswith(".md") and f != "README.md":
+            if f.endswith(".md") and f not in index.NOT_LESSONS:
                 c = index.parse(os.path.join(d, f))
                 out[tag + f[:-3]] = c.get("situation", []) + [c.get("lesson", "")] 
     return out

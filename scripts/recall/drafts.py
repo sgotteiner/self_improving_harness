@@ -17,7 +17,7 @@ STATE = os.path.join(tempfile.gettempdir(), "recall-drafts")  # one marker per d
 
 def waiting():
     """(lesson drafts, diary drafts): slugs of the pending files."""
-    names = lambda d: [f[:-3] for f in sorted(os.listdir(d)) if f.endswith(".md") and f != "README.md"] if os.path.isdir(d) else []
+    names = lambda d: [f[:-3] for f in sorted(os.listdir(d)) if f.endswith(".md") and f not in index.NOT_LESSONS] if os.path.isdir(d) else []
     return names(LESSONS), names(diary.PENDING)
 
 

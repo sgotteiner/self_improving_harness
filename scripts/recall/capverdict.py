@@ -3,7 +3,7 @@ human message is judged by the message step's one model call (delegate.input_ste
 RIGHT = right+1, WRONG = wrong+1, NONE or no answer = ignored+1; then the awaiting entries of that transcript are cleared."""
 import json, os, re, time
 
-import capstats, ctx
+import capstats, ctx, propread
 
 AWAITING = os.path.join(ctx.ROOT, "scripts", "recall", "results", "gate_awaiting.json")
 DAY = 86400  # an entry older than this is dropped unread
@@ -69,7 +69,7 @@ def ask_text(aw):
 
 def strip(out):
     """The reply without its VERDICT answers, so the kind and the flags are read as before."""
-    return VERDICT.sub("", out)
+    return VERDICT.sub("", propread.strip(out))
 
 
 def settle(tp, aw, out):
@@ -85,17 +85,19 @@ def settle(tp, aw, out):
     _save([e for e in _load() if e["tp"] != tp])
 
 
-def ask(tp, text, tag):
-    """brain.ask(text + the awaiting lessons) -> (reply without VERDICT answers, tokens); the verdicts are counted here. If the
-    call fails they count as ignored (logged) and the error goes on."""
+def ask(tp, text, tag, reply=""):
+    """brain.ask(text + the awaiting lessons + the proposal he was shown) -> (reply without VERDICT and PROPOSAL answers, tokens);
+    the answers are acted on here. reply = the assistant's last reply: a proposal counts as shown only if it has its line. If
+    the call fails the verdicts count as ignored (logged), a proposal waits for his next message, and the error goes on."""
     import brain
-    aw = awaiting(tp)
+    aw, pw = awaiting(tp), propread.waiting(tp, reply)
     try:
-        out, tok = brain.ask(text + ask_text(aw), tag=tag)
+        out, tok = brain.ask(text + ask_text(aw) + propread.ask_text(pw), tag=tag)
     except Exception:
         ctx.log("capverdict: model call failed, awaiting verdicts count as ignored")
         settle(tp, aw, "")
         raise
     if aw:
         settle(tp, aw, out)
+    propread.settle(pw, out)
     return strip(out), tok

@@ -3,6 +3,8 @@ import json, os, subprocess, sys, tempfile
 
 RECALL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path.insert(0, RECALL)
+import proposals  # no test may touch the real proposal queue: a temp file unless a test sets its own
+proposals.path = lambda p=os.path.join(tempfile.mkdtemp(), "proposals.jsonl"): p
 
 _n = [0]
 

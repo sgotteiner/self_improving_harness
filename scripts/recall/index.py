@@ -1,11 +1,14 @@
 """Derived SQLite FTS5 index over cases/*.md. The markdown files stay the source of truth."""
-import os, re, sqlite3
+import json, os, re, sqlite3
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CASES = os.path.normpath(os.path.join(HERE, "..", "..", "cases"))
 DB = os.path.join(HERE, "cases.db")
 # bm25 column weights: id, situation, lesson, wrong, right (situation highest)
 WEIGHTS = (2.0, 10.0, 3.0, 1.0, 1.0)
+NOT_LESSONS = ("README.md", "LESSONS.md")  # files of cases/ that are not lesson files (LESSONS.md is generated)
+STORE, ACTIVE = "situations.jsonl", "active"  # the situations store (situations.py) and the status of a live line
+PAGE_SOURCES = ("correction", "gate", "work")  # a seed line is a hand-written situation: no did / outcome, so no history block
 STOP = set("a an the to of in on at for and or but is are was be it its this that i me my we you do does did "
            "can could should would will just so as with from by if then than not no yes up out about into".split())
 
@@ -34,20 +37,20 @@ PARTS = ("situation", "assistant did", "he did not like", "lesson")  # the parts
 
 
 def history_records(cid):
-    """Cleaned occurrences of a case from cases/history/<id>.md: [{"date", "source", <PARTS>}]. One block per
-    occurrence, headed `## <date> | <source>`, one `- <part>: <text>` line per part."""
-    p = os.path.join(CASES, "history", cid + ".md")
-    out = []
+    """Cleaned occurrences of a lesson, read from the store (cases/situations.jsonl), active ones in store order:
+    [{"date", "source", <PARTS>}]; the lesson part is the lesson's current text."""
+    p, d = os.path.join(CASES, STORE), os.path.join(CASES, cid + ".md")
     if not os.path.exists(p):
-        return out
-    for line in open(p, encoding="utf-8").read().splitlines():
-        if line.startswith("## "):
-            date, _, src = line[3:].partition(" | ")
-            out.append({"date": date.strip(), "source": src.strip()})
-        elif out and line.startswith("- ") and ": " in line:
-            k, _, v = line[2:].partition(": ")
-            out[-1][k.strip()] = v.strip()
-    return out
+        return []
+    lesson = parse(d).get("lesson", "") if os.path.exists(d) else ""
+    rows = [json.loads(l) for l in open(p, encoding="utf-8").read().splitlines() if l.strip()]
+    return [{"date": r["date"], "source": r["source"], **dict(zip(PARTS, (r["situation"], r["did"], r["outcome"], lesson)))}
+            for r in rows if r["lesson_id"] == cid and r["status"] == ACTIVE and r["source"] in PAGE_SOURCES]
+
+
+def block(r):
+    """The history-page block of one occurrence record (history_records' shape): the one place that format lives."""
+    return f"## {r['date']} | {r['source']}\n" + "".join(f"- {k}: {r[k]}\n" for k in PARTS)
 
 
 def occ_key(r):
@@ -67,7 +70,7 @@ def history_texts(cid, skip=()):
 
 
 def case_files():
-    return [os.path.join(CASES, f) for f in sorted(os.listdir(CASES)) if f.endswith(".md") and f != "README.md"]
+    return [os.path.join(CASES, f) for f in sorted(os.listdir(CASES)) if f.endswith(".md") and f not in NOT_LESSONS]
 
 
 def stale():

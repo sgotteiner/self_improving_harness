@@ -3,7 +3,7 @@ runs `capture.py write <json>` (write()); capowed.py tracks that it did."""
 import datetime, json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import capowed, capstats, clean, ctx, history, index, pending
+import capowed, capstats, clean, ctx, history, index, patchfirst, pending
 
 PENDING = os.path.join(index.CASES, "_pending")
 SCANNED = ("situation", "did", "disliked", "lesson", "slug")  # his_words stays local (history.db, the gitignored pending draft)
@@ -15,7 +15,7 @@ def lessons():
     out = []
     for d in (index.CASES, PENDING):
         for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
-            if f.endswith(".md") and f != "README.md":
+            if f.endswith(".md") and f not in index.NOT_LESSONS:
                 out.append((f[:-3], index.parse(os.path.join(d, f)).get("lesson", "")))
     return out
 
@@ -97,16 +97,17 @@ def write(d):
         capowed.pay(src)
         _count(lambda: capstats.bump(lid, "missed") if src != "gate" else capowed.settle_one(lid))
         return True, f"occurrence recorded on {lid}"
-    slug = pending.slugify(d["slug"], "captured-mistake")
-    if d.get("approved") is not True:  # no drafts: only his yes adds a lesson
+    slug = pending.slugify(d["slug"], pending.DEFAULT_SLUG)
+    if d.get("approved") is not True:  # no drafts: only his yes adds a lesson (or edits the lesson this one repeats)
         capowed.pay(src)
-        return True, ("Ask him in your reply, with the exact lesson line; only his yes adds it: rerun with \"approved\": true. "
-                      f"Lesson: {d['lesson']}")
-    q, path = pending.q, os.path.join(index.CASES, slug + ".md")
-    open(path, "w", encoding="utf-8").write(
-        f"---\nid: {slug}\ndate: {datetime.date.today()}\nlevel: advice\nhis_words: {q(raw)}\nsituation:\n  - {q(d['situation'])}\n"
-        f"wrong: {q(d['did'])}\nright: {q('(not stated)')}\nlesson: {q(d['lesson'])}\nreplay: {q('(not stated)')}\n"
-        f"pass_if:\n  - {q('(not stated)')}\noccurrences: 0\n---\n")
+        try:
+            return True, patchfirst.propose(d, src, raw, c)
+        except Exception as e:  # the queue failed: the session asks him itself, as before
+            ctx.log(f"capture: proposal not queued: {e!r}")
+            return True, ("Ask him in your reply, with the exact lesson line; only his yes adds it: rerun with \"approved\": true. "
+                          f"Lesson: {d['lesson']}")
+    path = os.path.join(index.CASES, slug + ".md")
+    open(path, "w", encoding="utf-8").write(pending.case_text(slug, d, raw, datetime.date.today()))
     history.record(path, src, raw, clean_text=c)
     capowed.pay(src)
     return True, f"case written: cases/{slug}.md"
