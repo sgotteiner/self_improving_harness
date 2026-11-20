@@ -64,12 +64,12 @@ def _fill(template, **kw):
 def input_step(prompt, transcript):
     """-> ([the one instruction line for his kind of message, plus the tests line for a task], tokens). One call also
     detects a correction (slot `capture`): that kind prints capture's write instruction and sets the owed marker."""
-    import brain
     reply, tools = ctx.last_turn(transcript, prompt.strip()) if transcript else ("", [])
     recent = [l for l in (ctx.recent(transcript, 5) if transcript else []) if l != "Owner: " + prompt.strip()][-4:]
     recent = "\n".join(l[:600] for l in recent)  # his new message may already be in the transcript: left out
     prev = f"{recent}\n\nThe assistant's previous full reply:\n{reply[-4000:] or '(none)'}\nIts tool calls: {'; '.join(tools) or 'none'}"
-    out, tok = brain.ask(_fill(_prompt("Input step"), prev=prev, prompt=prompt), tag="delegate-in")
+    import capverdict  # the same call also judges gate blocks awaiting his verdict
+    out, tok = capverdict.ask(transcript, _fill(_prompt("Input step"), prev=prev, prompt=prompt), "delegate-in")
     m = re.match(r"\W*([A-Z]+(?:-[A-Z]+)?)", out.upper())
     kind = m.group(1) if m else ""
     if kind not in INPUT_KINDS:

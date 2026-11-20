@@ -1,12 +1,26 @@
 {
  "answer-the-direct-question-before-details": {
-  "correct": 0,
-  "incorrect": 1,
-  "missed": 0
+  "ignored": 0,
+  "missed": 0,
+  "right": 0,
+  "wrong": 0
+ },
+ "answer-what-he-wants-to-know": {
+  "ignored": 0,
+  "missed": 1,
+  "right": 0,
+  "wrong": 0
+ },
+ "decide-trivial-choices-dont-ask": {
+  "ignored": 1,
+  "missed": 0,
+  "right": 0,
+  "wrong": 0
  },
  "report-without-testing": {
-  "correct": 1,
-  "incorrect": 0,
-  "missed": 0
+  "ignored": 0,
+  "missed": 0,
+  "right": 0,
+  "wrong": 0
  }
 }

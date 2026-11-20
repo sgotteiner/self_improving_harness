@@ -1,10 +1,10 @@
-"""cases/stats.json: per lesson id how often the gate caught it rightly (correct), wrongly (incorrect), or he had to correct a
-repeat himself (missed). One small file, no db; counting only, nothing else reads it. Written atomically."""
+"""cases/stats.json: per lesson id how often he judged a gate block right or wrong, left it unanswered (ignored; capverdict.py),
+or had to correct a repeat himself (missed; capwrite.py). One small file, no db; counting only, nothing else reads it. Written atomically."""
 import json, os, time
 
 import ctx, index, mdfile
 
-KEYS = ("correct", "incorrect", "missed")
+KEYS = ("right", "wrong", "missed", "ignored")
 
 
 def _locked(lock):
@@ -38,6 +38,8 @@ def bump(lesson_id, key):
             ctx.log(f"capstats: stats.json unreadable, left untouched, count skipped: {e!r}")
             return
         c = s.setdefault(lesson_id, {})
+        for old in ("correct", "incorrect"):  # migration: the keys this file had before
+            c.pop(old, None)
         for k in KEYS:
             c.setdefault(k, 0)
         c[key] += 1

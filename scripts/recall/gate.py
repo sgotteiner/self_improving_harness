@@ -95,7 +95,7 @@ def delegation(tp):
 def main():
     if ctx.skip_env("RECALL_GATE") or not ctx.enabled("output-gate"):
         return
-    import brain
+    import brain, capowed, capverdict
     ctx.BUDGET = STOP_LIMIT - brain.TIMEOUT
     d = json.load(sys.stdin)
     try:  # first, also on the reply that follows a block: that reply is where he or the session calls the block a false alarm
@@ -106,7 +106,6 @@ def main():
     tp = d.get("transcript_path", "")
     owed = None  # a `capture.py write` is still unpaid (capowed.py): blocks once, fails open
     try:
-        import capowed
         owed = capowed.settle(tp, d.get("stop_hook_active"))
     except Exception as e:
         ctx.log(f"gate: capture check failed: {e!r}")
@@ -123,11 +122,11 @@ def main():
                "is \"(not stated)\", never a guess." if ctx.enabled("capture") else "")
         if rec:
             try:
-                import capowed
                 capowed.owe("gate", tp, lesson=cid)
             except Exception as e:
                 ctx.log(f"gate: capture marker failed: {e!r}")
-        reasons.append(f"Output gate (cases/{cid}.md): {why} Fix this now, then finish.{rec}")
+        line = capverdict.block(tp, cid, why)  # his verdict on this block is counted from his next message
+        reasons.append(f"Output gate (cases/{cid}.md): {why} Fix this now, then finish.{rec}{line}")
     if owed:
         reasons.append(owed)
     dr = delegation(tp)

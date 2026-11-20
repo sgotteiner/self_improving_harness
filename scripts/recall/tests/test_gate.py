@@ -1,8 +1,8 @@
 """gate.py: a hedging lesson verdict is dropped; several broken lessons come in one block, with every lesson sent."""
-import io, json, sys, unittest
+import io, json, os, sys, tempfile, unittest
 from unittest import mock
 
-import ctx, gate
+import ctx, gate, capverdict
 
 
 def run(lesson, delegation):
@@ -15,6 +15,11 @@ def run(lesson, delegation):
 
 
 class Gate(unittest.TestCase):
+    def setUp(self):  # never the real awaiting file
+        p = mock.patch.object(capverdict, "AWAITING", os.path.join(tempfile.mkdtemp(), "awaiting.json"))
+        p.start()
+        self.addCleanup(p.stop)
+
     def test_a_lesson_verdict_that_leads_with_a_hedge_does_not_block(self):
         self.assertIsNone(run(("c", "This may be OK: it claims it works"), None))
         self.assertIsNotNone(run(("c", "Claims it works with no run; unclear which file, run the test"), None))

@@ -52,7 +52,7 @@ def none(why, kind="correction"):
     ctx.log(f"capture: {kind} settled as not a mistake: {why.strip()}")
     capowed.pay(kind)
     if kind == "gate":
-        _count(lambda: [capstats.bump(l, "incorrect") for l in capowed.settle_rest()])
+        _count(capowed.settle_rest)  # the markers only; the count is his verdict (capverdict.py)
     return True, "logged, no case written"
 
 
@@ -95,7 +95,7 @@ def write(d):
     if lid:
         history.record(_find(lid), src, raw, clean_text=c)
         capowed.pay(src)
-        _count(lambda: capstats.bump(lid, "missed") if src != "gate" else capowed.settle_one(lid) and capstats.bump(lid, "correct"))
+        _count(lambda: capstats.bump(lid, "missed") if src != "gate" else capowed.settle_one(lid))
         return True, f"occurrence recorded on {lid}"
     slug = pending.slugify(d["slug"], "captured-mistake")
     if d.get("approved") is not True:  # no drafts: only his yes adds a lesson
