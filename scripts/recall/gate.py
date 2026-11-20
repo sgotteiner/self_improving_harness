@@ -103,12 +103,13 @@ def main():
     import brain, capowed, capverdict
     ctx.BUDGET = STOP_LIMIT - brain.TIMEOUT
     d = json.load(sys.stdin)
-    try:  # first, also on the reply that follows a block: that reply is where he or the session calls the block a false alarm
-        import gatecases
-        gatecases.label(d.get("transcript_path", ""))
-    except Exception as e:
-        ctx.log(f"gate: labelling failed: {e!r}")
     tp = d.get("transcript_path", "")
+    try:  # first, also on the reply that follows a block: that reply is where he or the session calls the block a false alarm
+        import gatecases, traceevents
+        gatecases.label(tp)
+        traceevents.at_stop(tp)  # agent returns and commits of this turn -> this session's open feature trace
+    except Exception as e:
+        ctx.log(f"gate: labelling or trace events failed: {e!r}")
     owed = None  # a `capture.py write` is still unpaid (capowed.py): blocks once, fails open
     try:
         owed = capowed.settle(tp, d.get("stop_hook_active"))
@@ -132,11 +133,7 @@ def main():
                 ctx.log(f"gate: capture marker failed: {e!r}")
         line = capverdict.block(tp, cid, why)  # his verdict on this block is counted from his next message
         reasons.append(f"Output gate (cases/{cid}.md): {why} Fix this now, then finish.{rec}{line}")
-    if owed:
-        reasons.append(owed)
-    dr = delegation(tp)
-    if dr:
-        reasons.append(dr)
+    reasons += [r for r in (owed, delegation(tp)) if r]
     verdicts.log(tp, "gate", "SENT" if reasons else "PASS", rule=str(len(reasons)))
     if reasons:
         print(json.dumps({"decision": "block", "reason": "\n".join(reasons)}))

@@ -35,3 +35,15 @@ def veto(kind, reason, t):
     if kind in AGENT_OF and t["pending"] and not t["claims"]:  # a change still being made cannot be tested or reviewed yet
         return f"a background agent ({', '.join(t['pending'])}) is still running and the final message does not claim it is done"
     return None
+
+
+def need(prompt, names):
+    miss = [n for n in names if "{" + n + "}" not in prompt]
+    if miss:
+        raise ValueError("placeholder(s) missing: " + ", ".join(miss))
+
+
+def keys(lines, want):
+    miss = [k for k in want if k not in lines]
+    if miss:
+        raise ValueError("bullet(s) missing: " + ", ".join(miss))

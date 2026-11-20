@@ -49,6 +49,8 @@ node_modules/
 /scripts/recall/vectors.db
 /scripts/recall/results/brain_calls.jsonl
 /scripts/recall/history.db
+# feature traces carry his words (the why of each feature): local only; the record goes to the private vault via the knowledge-manager at done
+/traces/
 /scripts/recall/denylist.local.txt
 /scripts/recall/results/hook.log
 # local measurement: every gate verdict, and the replay answers he is asked to mark

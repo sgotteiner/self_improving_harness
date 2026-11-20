@@ -42,7 +42,8 @@ def review(tp, marks, es):
     """Review the stretch since the last review up to the cut `marks`, queue at most one draft. Returns the draft dict, or None.
     Skipped (no brain call) when capture recorded an occurrence or a proposal in this stretch: it already holds the lesson.
     Raises on a failed call."""
-    import brain, patchfirst
+    import brain, patchfirst, tracechange
+    trace = tracechange.take_closed(tp)  # the feature his done just closed: its why and events come with the stretch
     prev = read().get(tp, {})
     if captured(prev, marks):
         ctx.log("workreview: skipped, capture recorded an occurrence or a proposal from this stretch")
@@ -50,6 +51,7 @@ def review(tp, marks, es):
     work = stretch(tp, prev.get("entries", 0), marks["entries"], es)
     if not work.strip():
         return None
+    work = f"Trace of the feature he just closed (its why and events):\n{trace}\n\nThe stretch:\n{work}" if trace else work
     out, _ = brain.ask(PROMPT.format(work=work), tag="work-review")
     d = parse(out)
     if not d:

@@ -49,6 +49,7 @@ def turn(tp, root=ctx.ROOT):
     t = dict(human=human[-1] if human else "", text=ctx.last_turn(tp)[0], tools=[], edited=False, returned=False)
     order, called, pend, setup, edit_seqs, bash_seqs, sm_seqs = [], [], {}, [], [], [], []
     suite_seq, tester_seqs, impl_seqs, fell, reviews = -1, [], [], [], []  # the suite run, tester calls/results, implementer calls, results, reviews
+    rets, commits = [], []  # (agent type, result) of agents that returned this turn; the outputs of `git commit` calls (feature traces)
     hs = [i for i, e in enumerate(es) if ctx.human_text(e)]
     horizon = hs[-3] * transcript.SEQ if len(hs) >= 3 else 0  # an agent started in the last three turns and not returned is still running
     for c in (c for c in cs if c["name"] in ("Agent", "Task", "SendMessage") and c["seq"] >= horizon):
@@ -85,11 +86,14 @@ def turn(tp, root=ctx.ROOT):
             order += [k.upper() for k in _kinds(kind) if k in ("implementer", "tester")]
             if not _launched(c, types)[0] and res:
                 t["returned"] = True
+                rets.append((kind, res))
         else:
             t["tools"].append(ctx.tool_line({"name": n, "input": i}) + tail)
             if n == "Bash" and suitecmd.is_suite(str(i.get("command", ""))):
                 suite_seq = c["seq"]
                 fell.append((c["seq"], res))
+            if n == "Bash" and res and re.search(r"\bgit\s+commit\b", str(i.get("command", ""))):
+                commits.append(res)
             if n == "Bash" and BASH_WRITE.search(str(i.get("command", ""))):
                 t["edited"] = True
                 bash_seqs.append(c["seq"])
@@ -101,13 +105,14 @@ def turn(tp, root=ctx.ROOT):
         tester_seqs += [s] if "tester" in kind else []
         fell += [(s, txt)] if "tester" in kind else []
         reviews += [(s, txt)] if "reviewer" in kind else []
+        rets.append((kind or "agent", txt))
         t["tools"].append(f"Background agent ({kind or 'unknown type'}) result received this turn: {txt}")
     changed = setupstate.git_changed(tp, root)
     setup += [r for r in changed if r not in setup]
     t["edited"] = t["edited"] or bool(changed)
     fseqs = [s for s, x in fell if suitecmd.FELL.search(x)]
     last_edit = max(edit_seqs + (bash_seqs if changed else []), default=-1)
-    t.update(setup=setup, called=called, claims=claims(t["text"]), pending=[v[1] for v in pend.values()],
+    t.update(rets=rets, commits=commits, setup=setup, called=called, claims=claims(t["text"]), pending=[v[1] for v in pend.values()],
              sm_ok=not setup or any(s > last_edit for s in sm_seqs),
              suite_unexcused=suite_seq >= 0 and not any(s > suite_seq for s in tester_seqs),  # a suite run needs a tester call AFTER it
              fell_short=bool(fseqs),  # a test or tester result of this turn says the purpose fell short

@@ -8,9 +8,9 @@ tasks/delegation-draft.md (fenced blocks and bullet lists), so editing either ch
 into the code. Both steps return (result, tokens) and raise on failure; the callers (hook.py, gate.py) fail open."""
 import os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx, turnfacts, verdicts
+import ctx, tracechange, turnfacts, verdicts
 import delegvet
-from delegvet import veto
+from delegvet import keys as _keys, need as _need, veto
 
 CLAUDE_MD = os.path.join(ctx.ROOT, "CLAUDE.md")
 DRAFT = os.path.join(ctx.ROOT, "tasks", "delegation-draft.md")
@@ -74,7 +74,7 @@ def input_step(prompt, transcript):
     recent = "\n".join(l[:600] for l in recent)  # his new message may already be in the transcript: left out
     prev = f"{recent}\n\nThe assistant's previous full reply:\n{reply[-4000:] or '(none)'}\nIts tool calls: {'; '.join(tools) or 'none'}"
     import capverdict  # the same call also judges gate blocks awaiting his verdict
-    out, tok = capverdict.ask(transcript, _fill(_prompt("Input step"), prev=prev, prompt=prompt), "delegate-in", reply)
+    out, tok, trace = tracechange.ask(capverdict.ask, transcript, _fill(_prompt("Input step"), prev=prev, prompt=prompt), prompt, "delegate-in", reply)
     m = re.match(r"\W*([A-Z]+(?:-[A-Z]+)?)", out.upper())
     kind = m.group(1) if m else ""
     if kind not in INPUT_KINDS:
@@ -86,6 +86,7 @@ def input_step(prompt, transcript):
     lines = _lines("Instruction lines attached")
     rest = out.upper().partition("|" if kind == "CORRECTION" else kind)[2]
     extra = [lines[f] for f in ("DONE", "UNANSWERED") if re.search(r"\b" + f + r"\b", rest)]  # done -> SDD edit; ignored -> a no
+    extra += trace(kind, lines["DONE"] in extra)  # open / attach / close a feature trace
     if kind == "CORRECTION":
         if not ctx.enabled("capture") or not reply.strip():
             return extra, tok
@@ -141,15 +142,3 @@ def check_sources():
         except (ValueError, OSError) as e:
             out.append(f"{label}: {e}")
     return out
-
-
-def _need(prompt, names):
-    miss = [n for n in names if "{" + n + "}" not in prompt]
-    if miss:
-        raise ValueError("placeholder(s) missing: " + ", ".join(miss))
-
-
-def _keys(lines, want):
-    miss = [k for k in want if k not in lines]
-    if miss:
-        raise ValueError("bullet(s) missing: " + ", ".join(miss))

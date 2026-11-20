@@ -88,7 +88,20 @@ Everything that changes the knowledge reaches him as one proposal line: yes, or 
 
 ### Checkpoint C — complete: SDD updated, review, his verdicts on the first proposals
 
-### Later (separate plan) — feature traces (an Ideas row from the first ask to done)
+### Phase 5 — feature traces, part of learning from the work (his words 2026-11-20: "i thought it was part of the learning from work. i want that")
+- [ ] **Task 9: Trace store and events.** `traces/<project>.jsonl` (local to the setup repo, tracked): one trace per feature {tid, project,
+  title, why (the problem that led to it, quoted from the turns before the ask), opened, events[], closed}. The message step's existing
+  call adds one flag line `TRACE <tid> | NEW <title> | <why quote> | NONE` (no second call). Events added by code, no model call:
+  his correction (message type), an agent return (reviewer findings / implementer / tester result, first line), a commit (hash +
+  subject from the turn's tool output), DONE closes it.
+  - Acceptance: a task message opens a trace with its why; a follow-up on it attaches, not a new one; a correction, a reviewer return
+    and a commit each add one event; DONE closes it.
+- [ ] **Task 10: Done → learning and record.** At DONE the work review reads the trace (its events + the stretch) instead of the last
+  turns only; the main session is told once to call the knowledge-manager with the trace for the Ideas row (problem, tried, result,
+  next) and the SDD if the system changed. Hooks never edit the vault.
+  - Acceptance: a closed trace gives the work review its events; the session gets exactly one "record this trace" instruction.
+- Check: unit tests (mocked call); one live run of the TRACE flag on today's real messages: "i like the tracing to see which lessons are
+  good" → NEW with the why from the graph-memory turns before it; "i thought the stats were by my approval ..." → the same trace.
 
 ## Checks (the measured purpose; proposed here, run only with his yes on this plan)
 - Phase 1: the gate's input is unchanged — byte-identical all-lessons text, and history pages unchanged. Prevents the migration
