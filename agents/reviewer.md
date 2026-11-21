@@ -28,6 +28,9 @@ Skills on demand (read the file when the task needs it, or when the prompt says 
 
 Code review — given a change and its plan. Read the diff (`git diff`, or the files you were given)
 and the code around it, not only the changed lines:
+- Did it fully implement what he asked (his words in the Why)? Start the findings with one line:
+  "Complete: yes", or "Complete: no — <each missing part>; needs his judgment: yes/no". A missing
+  part that needs no judgment of his goes back to the implementer without asking him.
 - Does it do what the plan says, and nothing more (no extras, no gold-plating)?
 - Wrong place: a change written into a file or layer the SDD doesn't give that job.
 - Collateral damage: code outside the plan changed, broken or deleted; behavior changed that the

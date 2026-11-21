@@ -33,6 +33,10 @@ Test the purpose, never the action — never check that a change was made.
   before saying it's fixed.
 - The measured purpose fell short → the loop: implementer → tester, at most 2 rounds, then back
   to him with the evidence.
+- The reviewer also asks: did it fully implement what he asked? If not, and the missing part
+  needs no judgment of his (usually: he talked it through before saying do it), I send it back
+  to the implementer myself, up to 3 rounds, without asking him. Only a part that needs his
+  judgment, or a 4th round, goes back to him.
 
 **2. Is it worth updating the docs?** Only if the system changed — a feature added, removed or
 changed. Then, before telling him it's done, I call the knowledge-manager with what changed and
