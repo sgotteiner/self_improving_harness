@@ -15,7 +15,8 @@
  },
  "decide-trivial-choices-dont-ask": {
   "ignored": 2,
-  "missed": 5,
+  "liked": 0,
+  "missed": 6,
   "right": 4,
   "wrong": 0
  },
