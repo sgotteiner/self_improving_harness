@@ -14,6 +14,8 @@ GIT_LINES_MAX = 25  # `git status --short` lines kept per repo
 GIT_TIMEOUT = 20  # seconds per git call
 VAULT = os.path.join(os.path.dirname(ctx.ROOT), "Vault")
 UNVERIFIED = re.compile(r"unverified|not verified|not run live", re.I)
+VERIFIED = re.compile(r"(?<!not )verified|checked live", re.I)  # an SDD line that says so is not an open item
+FINISHED = ("done", "closed")  # IDEAS statuses whose rows are not open items
 UNCHECKED = re.compile(r"^\s*- \[ \]\s*(.*)")
 NOTHING = "(nothing left open)"
 
@@ -63,8 +65,9 @@ def open_rows(rows):
 
 
 def unverified(rows, sdd):
-    hits = [l.split("|")[1] for l in rows.values() if UNVERIFIED.search(l)]
-    return [_cut(t) for t in hits + [l for l in added_today(sdd) if l.startswith("- criteria:") and UNVERIFIED.search(l)]]
+    """Unfinished rows whose result or next cell is marked unverified, and SDD criteria lines changed today that are and do not also say verified."""
+    hits = [c[1] for c in (l.split("|") for l in rows.values()) if not c[2].strip().lower().startswith(FINISHED) and UNVERIFIED.search("|".join(c[4:]))]
+    return [_cut(t) for t in hits + [l for l in added_today(sdd) if l.startswith("- criteria:") and UNVERIFIED.search(l) and not VERIFIED.search(l)]]
 
 
 def dirty(repos):
@@ -85,7 +88,7 @@ def proposals_waiting():
 
 def agents_running(tp):
     import transcript
-    return [f"{k}: {_cut(d)}" for k, d in transcript.running(ctx.entries(tp))] if tp else []
+    return [f"{k}: {_cut(d)}" for k, d in transcript.running(ctx.entries(tp, notices=True))] if tp else []
 
 
 def report(cwd, tp=""):

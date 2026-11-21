@@ -60,7 +60,9 @@ def is_human(text):
     return bool(text) and not text.lstrip().startswith(SYSTEM_PREFIXES)
 
 
-def entries(path):
+def entries(path, notices=False):
+    """The main-thread user and assistant entries. notices=True also yields the background-agent notifications the
+    transcript stores as a queued-command attachment (a notification that arrived while he was typing), as user entries."""
     out = []
     try:
         for l in open(path, encoding="utf-8"):
@@ -68,7 +70,10 @@ def entries(path):
                 j = json.loads(l)
             except ValueError:
                 continue
-            if j.get("type") in ("user", "assistant") and isinstance(j.get("message"), dict) and not j.get("isSidechain"):
+            a = j.get("attachment")
+            if notices and isinstance(a, dict) and a.get("type") == "queued_command" and str(a.get("prompt", "")).startswith(NOTICE_PREFIX) and not j.get("isSidechain"):
+                out.append({"type": "user", "message": {"role": "user", "content": a["prompt"]}})
+            elif j.get("type") in ("user", "assistant") and isinstance(j.get("message"), dict) and not j.get("isSidechain"):
                 out.append(j)
     except OSError:
         pass
