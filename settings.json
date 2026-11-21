@@ -14,7 +14,13 @@
       "WebSearch",
       "NotebookEdit",
       "mcp__youtube",
-      "mcp__firecrawl"
+      "mcp__firecrawl",
+      "mcp__sentry__search_traces",
+      "mcp__sentry__search_issues",
+      "mcp__sentry__search_errors",
+      "mcp__sentry__get_sentry_resource",
+      "mcp__sentry__search_sentry_tools",
+      "mcp__sentry__find_projects"
     ],
     "deny": [
       "Bash(rm -rf /:*)",
@@ -22,8 +28,10 @@
       "Edit(//**/.env.*)"
     ],
     "ask": [
-      "Bash(git commit *)",
       "Bash(git push *)"
+    ],
+    "additionalDirectories": [
+      "C:/my_projects"
     ]
   },
   "model": "opus",
