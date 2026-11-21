@@ -27,6 +27,13 @@
   "right": 0,
   "wrong": 0
  },
+ "fix-bugs-yourself": {
+  "ignored": 0,
+  "liked": 0,
+  "missed": 1,
+  "right": 0,
+  "wrong": 0
+ },
  "fix-the-class-not-the-instance": {
   "ignored": 0,
   "liked": 1,
