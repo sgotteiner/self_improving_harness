@@ -59,7 +59,7 @@ def apply(tp, proj, tline, kind, prompt, done):
                 return []
             r["closed"] = str(datetime.date.today())
             return [("Feature trace closed: call the knowledge-manager now with this trace, for the Ideas row (problem, what was tried, "
-                     "result, next) and, if the system changed, the SDD. The hooks do not edit the vault.\n" + render(r))]
+                     "result, next; write the trace's Interventions count into the row's result) and, if the system changed, the SDD. The hooks do not edit the vault.\n" + render(r))]
         return change(proj, attach)
     except Exception as e:
         ctx.log(f"tracing: apply failed: {e!r}")

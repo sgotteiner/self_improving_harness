@@ -12,8 +12,8 @@
   "wrong": 0
  },
  "decide-trivial-choices-dont-ask": {
-  "ignored": 4,
-  "missed": 4,
+  "ignored": 5,
+  "missed": 5,
   "right": 1,
   "wrong": 0
  },
@@ -36,7 +36,7 @@
   "wrong": 0
  },
  "report-without-testing": {
-  "ignored": 6,
+  "ignored": 7,
   "missed": 2,
   "right": 0,
   "wrong": 0

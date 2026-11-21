@@ -42,9 +42,9 @@ Instruction lines attached to the main session's context (the brain's word picks
 - TASK: He asked you to do something: first say back what he asked and how it helps him, and ask him to confirm. Don't start or delegate until he says yes.
 - CONFIRMATION: He confirmed the task you said back: delegate it to the implementer now, with Why, task, paths and the test command.
 - TALK: He is talking it through: give your feedback and opinion. Don't act.
-- DONE: He says it's done: in this reply, propose the SDD edit — what changed, shown as the change to the doc. Only after his yes, the knowledge-manager writes it. For ideas, diary or flags: ask him only if something belongs there, with the exact line.
+- DONE: He says it's done: in this reply, propose the SDD edit — what changed, shown as the change to the doc. Only after his yes, the knowledge-manager writes it. For ideas, diary or flags: ask him only if something belongs there, with the exact line. After the knowledge-manager returns, check `git status` in the project's repo and in the Vault: commit what belongs to this feature and anything else that is good, one commit per feature; delete what is junk; ask him in one line only about a change you can't judge.
 - UNANSWERED: Your suggestion in the previous reply was not answered: it's a no. Don't repeat it and don't save it anywhere.
-- TESTS: Tests: propose only a check for what failed, what may fail or what he asked, with the failure it prevents in one line; run it only after his yes.
+- TESTS: Tests: a check that verifies what he asked for is part of the task: run it and report the result. Propose only a check beyond that (for what failed or may fail elsewhere), with the failure it prevents in one line; run that one only after his yes.
 
 ## Output step (gate.py, before the reply)
 

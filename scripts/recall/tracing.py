@@ -7,7 +7,7 @@ event]}: the trace it started from; both only with the slot trace-links). Every 
 import datetime, json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx, mdfile
+import ctx, mdfile, tracecount
 
 DIR = os.path.join(ctx.ROOT, "traces")
 TITLE_MAX, WHY_MAX, TEXT_MAX = 80, 300, 200  # chars kept of a title, a why quote, an event's text
@@ -134,5 +134,14 @@ def render(r, cap=RECORD_MAX):
     f = r.get("from")  # rows from before the edges have neither `from` nor event sids
     head = (f"Feature trace {r['tid']}: {r['title']}\nWhy: {r['why']}\nOpened {r['opened']}" + (f", closed {r['closed']}" if r.get("closed") else "")
             + (f"\nStarted from {f['tid']}" + (f" ({f['type']} event {f['event']})" if "event" in f else "") if f else ""))
+    try:
+        iv = tracecount.line(*tracecount.counts(r, read(r.get("project", ""))))
+    except Exception:
+        iv = ""
+    head += "\n" + iv if iv else ""
     return (head + "".join(f"\n- {e['at'][:10]} {e['type']}: {e['text']}" + (f" [{', '.join(e['sids'])}]" if e.get("sids") else "")
                            for e in r["events"]))[:cap]
+
+
+if __name__ == "__main__" and sys.argv[1:2] == ["interventions"]:
+    print(tracecount.report(*sys.argv[2:3]))

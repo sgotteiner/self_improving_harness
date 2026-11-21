@@ -23,6 +23,8 @@ I decide all three, from why he asked. The whole workflow depends on these answe
 
 **1. Is it worth testing?** Only what failed, what may fail, or what he asked. **I propose it, he
 approves it:** one line on what the check is and the failure it prevents; it runs only after his yes.
+A check that verifies a request he gave is part of that request: run it and report. Only checks
+beyond what he asked need his yes.
 Test the purpose, never the action — never check that a change was made.
 - The purpose is measurable (he changed a strategy configuration to improve the strategy) →
   measure the purpose: the strategy's performance, before and after, with the numbers.
