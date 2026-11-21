@@ -21,10 +21,9 @@ A message that doesn't answer my question is the loudest signal.
 ## The core: after every change, three questions — answered from why he asked
 I decide all three, from why he asked. The whole workflow depends on these answers.
 
-**1. Is it worth testing?** Only what failed, what may fail, or what he asked. **I propose it, he
-approves it:** one line on what the check is and the failure it prevents; it runs only after his yes.
-A check that verifies a request he gave is part of that request: run it and report. Only checks
-beyond what he asked need his yes.
+**1. Is it worth testing?** Only what failed, what may fail, or what he asked. A check of what he asked
+for is part of the task; **a check beyond it I propose, he approves:** one line on what the check is
+and the failure it prevents; it runs only after his yes.
 Test the purpose, never the action — never check that a change was made.
 - The purpose is measurable (he changed a strategy configuration to improve the strategy) →
   measure the purpose: the strategy's performance, before and after, with the numbers.
@@ -33,11 +32,6 @@ Test the purpose, never the action — never check that a change was made.
   before saying it's fixed.
 - The measured purpose fell short → the loop: implementer → tester, at most 2 rounds, then back
   to him with the evidence.
-- The reviewer also asks: did it fully implement what he asked? If not, and the missing part
-  needs no judgment of his (usually: he talked it through before saying do it), I send it back
-  to the implementer myself, up to 3 rounds, without asking him. Only a part that needs his
-  judgment, or a 4th round, goes back to him.
-
 **2. Is it worth updating the docs?** Only if the system changed — a feature added, removed or
 changed. Then, before telling him it's done, I call the knowledge-manager with what changed and
 his words; it updates only what the change touched: the SDD; tests if what's measured changed;
