@@ -47,3 +47,33 @@ def keys(lines, want):
     miss = [k for k in want if k not in lines]
     if miss:
         raise ValueError("bullet(s) missing: " + ", ".join(miss))
+
+
+def check_sources(rules, prompt, lines, line_keys, block_keys):
+    """[problem] when CLAUDE.md or the draft no longer parse the way the hooks read them (a renamed heading must fail loudly, not
+    silently turn the delegation off). Run by `capture.py check` through delegate.check_sources."""
+    out = []
+    for label, fn in (("CLAUDE.md section 'The core'", rules),
+                      ("draft prompt 'Input step'", lambda: need(prompt("Input step"), ("prev", "prompt"))),
+                      ("draft prompt 'Done question'", lambda: prompt("Done question")),
+                      ("draft prompt 'Output step'", lambda: need(prompt("Output step"), ("rules", "human", "tools", "text", "facts", "max_rounds"))),
+                      ("draft 'Instruction lines attached'", lambda: keys(lines("Instruction lines attached"), line_keys)),
+                      ("draft 'Block reasons'", lambda: keys(lines("Block reasons"), block_keys))):
+        try:
+            fn()
+        except (ValueError, OSError) as e:
+            out.append(f"{label}: {e}")
+    return out
+
+
+def reason(tp):
+    """The delegation gate's block reason (slot delegation-gate), or None. Any error is logged and counts as no block."""
+    if not ctx.enabled("delegation-gate"):
+        return None
+    try:
+        import delegate
+        d, _ = delegate.output_step(tp)
+        return d[1] if d else None
+    except Exception as e:
+        ctx.log(f"gate: delegation failed: {e!r}")
+        return None

@@ -8,7 +8,7 @@ DB = os.path.join(HERE, "cases.db")
 WEIGHTS = (2.0, 10.0, 3.0, 1.0, 1.0)
 NOT_LESSONS = ("README.md", "LESSONS.md")  # files of cases/ that are not lesson files (LESSONS.md is generated)
 STORE, ACTIVE = "situations.jsonl", "active"  # the situations store (situations.py) and the status of a live line
-PAGE_SOURCES = ("correction", "gate", "work", "success")  # a seed line is a hand-written situation: no did / outcome, so no history block
+PAGE_SOURCES = ("correction", "gate", "work", "reflect", "success")  # a seed line is a hand-written situation: no did / outcome, so no history block
 STOP = set("a an the to of in on at for and or but is are was be it its this that i me my we you do does did "
            "can could should would will just so as with from by if then than not no yes up out about into".split())
 
@@ -37,7 +37,7 @@ PARTS = ("situation", "assistant did", "he did not like", "lesson")  # the parts
 
 
 OUTCOME = PARTS[2]  # the one slot every source stores its outcome in; the key stays, only the words shown depend on the source
-OUTCOME_LABELS = {"success": "he liked", "work": "what came of it"}  # the other sources are complaints: PARTS' own label
+OUTCOME_LABELS = {"success": "he liked", "work": "what came of it", "reflect": "what came of it"}  # the other sources are complaints: PARTS' own label
 
 
 def label(part, source):

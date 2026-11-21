@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import index, mdfile
 
 FILE = index.STORE
-SOURCES = ("correction", "gate", "work", "success", "seed")
+SOURCES = ("correction", "gate", "work", "reflect", "success", "seed")
 ACTIVE, RETIRED, PROPOSED = index.ACTIVE, "retired", "proposed"  # proposed: waits for his yes (proposals.py), then active or retired
 SID_FORMAT = "s%04d"
 EDITABLE = ("status", "hits", "last_hit", "lesson_id")

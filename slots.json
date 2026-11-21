@@ -92,6 +92,14 @@
     "enabled": true,
     "about": "a detached background review (workreview.py) of the work since the last review, at his done (the message step's DONE) and every 10 human turns; drafts at most one lesson (source work) through patchfirst, so it reaches him only as the proposal line"
   },
+  "reflection": {
+    "enabled": true,
+    "about": "SessionEnd hook (reflect.py): every 3rd closed session of a project starts a detached run that reads what those sessions recorded (situations of their dates, feature traces with his corrections) and drafts at most one lesson for a mistake that repeats across them (source reflect) through patchfirst, so it reaches him only as the proposal line"
+  },
+  "review-loop": {
+    "enabled": true,
+    "about": "Stop hook (reviewloop.py, called by gate.py, no model call): the reviewer's latest result of the turn says `Complete: no` and `needs his judgment: no`, no implementer call came after it and fewer than 3 implementer calls were made since his last message -> the stop is blocked and the missing parts go to the implementer; needs his judgment, or the limit reached: no block"
+  },
   "session-map": {
     "enabled": true,
     "about": "SessionStart hook (scripts/recall/sessionmap.py): prints the project's map top level, the State lines of its SDD note and its open Todo items, so a new session knows the project; off = prints nothing"

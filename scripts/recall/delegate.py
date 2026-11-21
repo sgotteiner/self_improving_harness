@@ -8,9 +8,9 @@ tasks/delegation-draft.md (fenced blocks and bullet lists), so editing either ch
 into the code. Both steps return (result, tokens) and raise on failure; the callers (hook.py, gate.py) fail open."""
 import os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx, corrflag, praise, relevance, tracechange, turnfacts, verdicts
+import ctx, corrflag, doneask, praise, relevance, tracechange, turnfacts, verdicts
 import delegvet
-from delegvet import keys as _keys, need as _need, veto
+from delegvet import veto
 
 CLAUDE_MD = os.path.join(ctx.ROOT, "CLAUDE.md")
 DRAFT = os.path.join(ctx.ROOT, "tasks", "delegation-draft.md")
@@ -74,9 +74,10 @@ def input_step(prompt, transcript):
     recent = "\n".join(l[:600] for l in recent)  # his new message may already be in the transcript: left out
     prev = f"{recent}\n\nThe assistant's previous full reply:\n{reply[-4000:] or '(none)'}\nIts tool calls: {'; '.join(tools) or 'none'}"
     import capverdict, capwrite  # the same call also judges gate blocks awaiting his verdict
-    out, tok, trace = tracechange.ask(capverdict.ask, transcript, _fill(_prompt("Input step"), prev=prev, prompt=prompt) + praise.ask() + corrflag.ask(), prompt, "delegate-in", reply)
+    out, tok, trace = tracechange.ask(capverdict.ask, transcript, _fill(_prompt("Input step"), prev=prev, prompt=prompt) + praise.ask() + corrflag.ask() + doneask.ask(_prompt), prompt, "delegate-in", reply)
     out, liked = praise.take(out)  # slot success-capture: the same call also says whether he praised the setup's recent work
     out, flagged = corrflag.take(out)  # slot capture: a CORRECTION flag line on any kind
+    out, asked = doneask.take(out, prompt)  # he asks whether it is all done: the full leftover list is attached
     kind = m.group(1) if (m := re.match(r"\W*([A-Z]+(?:-[A-Z]+)?)", out.upper())) else ""
     capturing = ctx.enabled("capture") and reply.strip()
     mistake = (out.partition("|")[2].strip().splitlines() or ["not specified"])[0] if kind == "CORRECTION" else ""
@@ -95,10 +96,10 @@ def input_step(prompt, transcript):
     rest = out.upper().partition("|" if kind == "CORRECTION" else kind)[2]
     extra = [lines[f] for f in ("DONE", "UNANSWERED") if re.search(r"\b" + f + r"\b", rest)]  # done -> SDD edit; ignored -> a no
     extra += trace(lines["DONE"] in extra, bool(said or flagged))  # open / attach / close a feature trace
-    extra += praised + nothing
+    extra += praised + nothing + ([doneask.line(lines["DONE-ASK"], transcript)] if asked else [])
     if kind == "CORRECTION":  # the kind's own sentence wins over a flag line
         return fixed(said) + extra, tok
-    return [lines[kind]] + ([lines["TESTS"]] if kind in ("TASK", "CONFIRMATION") else []) + fixed(flagged) + extra, tok
+    return ([] if asked else [lines[kind]]) + ([lines["TESTS"]] if kind in ("TASK", "CONFIRMATION") else []) + fixed(flagged) + extra, tok
 
 
 def output_step(transcript, root=ctx.ROOT):
@@ -134,17 +135,5 @@ def output_step(transcript, root=ctx.ROOT):
 
 
 def check_sources():
-    """[problem] when CLAUDE.md or the draft no longer parse the way the hooks read them (a renamed heading must fail
-    loudly, not silently turn the delegation off). Run by `capture.py check`."""
-    out = []
-    for label, fn in (("CLAUDE.md section 'The core'", rules),
-                      ("draft prompt 'Input step'", lambda: _need(_prompt("Input step"), ("prev", "prompt"))),
-                      ("draft prompt 'Output step'", lambda: _need(_prompt("Output step"), ("rules", "human", "tools", "text",
-                                                                                              "facts", "max_rounds"))),
-                      ("draft 'Instruction lines attached'", lambda: _keys(_lines("Instruction lines attached"), LINE_KINDS + ("TESTS", "DONE", "UNANSWERED", "NO-LESSON"))),
-                      ("draft 'Block reasons'", lambda: _keys(_lines("Block reasons"), BLOCK_KINDS))):
-        try:
-            fn()
-        except (ValueError, OSError) as e:
-            out.append(f"{label}: {e}")
-    return out
+    """[problem] when CLAUDE.md or the draft no longer parse the way the hooks read them (see delegvet.check_sources)."""
+    return delegvet.check_sources(rules, _prompt, _lines, LINE_KINDS + ("TESTS", "DONE", "DONE-ASK", "UNANSWERED", "NO-LESSON"), BLOCK_KINDS)

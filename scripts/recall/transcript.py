@@ -35,6 +35,21 @@ def notices(es):
     return [(i * SEQ, ctx._notice(e)) for i, e in enumerate(es) if ctx._notice(e)]
 
 
+def running(es):
+    """[(agent type, description)] of the background agents launched in these entries with no completion notification yet."""
+    cs, ns = calls(es), notices(es)
+    types, out = agent_types(cs, ns), {}
+    for c in cs:
+        m = AGENT_ID.search(c["result"])
+        if c["name"] in ("Agent", "Task") and m and "Async agent launched" in c["result"]:
+            out[m.group(1)] = (c["id"], types.get(m.group(1), "agent"), str(c["input"].get("description", "")))
+    for _, t in ns:
+        a, b = TASK_ID.search(t), TOOL_ID.search(t)
+        for k in [k for k, v in out.items() if (a and a.group(1) == k) or (b and b.group(1) == v[0])]:
+            del out[k]
+    return [(v[1], v[2]) for v in out.values()]
+
+
 def agent_types(cs, ns):
     """{agent id or tool-use id: subagent type} from the Agent calls (the id is in the launch result and in the
     notification), so a SendMessage that resumes an agent can be mapped back to the type that was started."""

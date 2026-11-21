@@ -36,6 +36,14 @@ DONE: his message says something is done, finished or settled.
 UNANSWERED: the assistant's previous reply suggested or asked something that his message does not answer.
 ```
 
+## Done question (added to the Input step: the flag DONE-ASK)
+
+His asking whether the work is done is not his saying it is (DONE). The same call adds one more line with a 1-5 score; the hook acts only at 4-5 (relevance.py) and then attaches the DONE-ASK instruction below with the full leftover list (leftovers.py: unchecked todo items, open IDEAS rows of today, git status of the project and the Vault, what is marked unverified).
+
+```text
+On the flags line also add, when his message asks whether the work is done or everything he asked is fixed or solved ("are we done?", "so all the problems i said are solved?", "thats it? done?"), exactly one line `DONE-ASK | <score> | <one short sentence>`, <score> = how sure you are that he is asking this, 1 to 5 (1 = a guess, 5 = certain). He is asking, not saying it is done: when he says it is done that is the DONE flag, never DONE-ASK. Otherwise add no such line.
+```
+
 Instruction lines attached to the main session's context (the brain's word picks one; TASK and CONFIRMATION also get the TESTS line; CORRECTION prints capture's write instruction from capwrite.py, not a line here; the flags DONE and UNANSWERED add their line to any kind):
 
 - QUESTION-YESNO: He asked a yes/no question: start with yes or no, then one or two lines of why. Don't run, change or delegate anything.
@@ -45,6 +53,7 @@ Instruction lines attached to the main session's context (the brain's word picks
 - TALK: He is talking it through: give your feedback and opinion. Don't act.
 - FEEDBACK: He gave feedback on what the setup did (praise, or a verdict on a gate catch): record it now with the capture line attached to this message, say in one line what you saved and to which lesson, then continue the work you were on. Don't ask anything about it.
 - DONE: He says it's done: in this reply, propose the SDD edit — what changed, shown as the change to the doc. Only after his yes, the knowledge-manager writes it. For ideas, diary or flags: ask him only if something belongs there, with the exact line. After the knowledge-manager returns, check `git status` in the project's repo and in the Vault: commit what belongs to this feature and anything else that is good, one commit per feature; delete what is junk; ask him in one line only about a change you can't judge.
+- DONE-ASK: He asks if it's done: answer from this full list, all leftovers at once, in one reply; if the list is empty, say done.
 - UNANSWERED: Your suggestion in the previous reply was not answered: it's a no. Don't repeat that suggestion and don't save it anywhere (his feedback in this message is still captured).
 - NO-LESSON: No relevant lesson found (closest: {lesson}, {score}/5): continue, and say in one line that no relevant lesson was found.
 - TESTS: Tests: a check that verifies what he asked for is part of the task: run it and report the result. Propose only a check beyond that (for what failed or may fail elsewhere), with the failure it prevents in one line; run that one only after his yes.

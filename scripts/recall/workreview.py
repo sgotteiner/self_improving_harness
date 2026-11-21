@@ -14,13 +14,14 @@ from workstate import change, cut, captured, humans, path, read  # noqa: the sta
 LEARN_TURNS = 10  # human turns since the last review that make one due
 RUN_STALE_MIN = 30  # a run marked running this long ago is taken as crashed
 RETRIES = 5  # tries to release the run when the state lock is busy
+REPLY = ("SITUATION: <the context and what was being done>\nDID: <what the assistant did>\n"  # the lines of a draft (reflect.py asks for them too)
+         "OUTCOME: <what happened: the snag and its fix, or what the owner approved>\nLESSON: <one general sentence>\n"
+         "SLUG: <2-4 words, kebab-case>")
 PROMPT = ("The stretch of a coding session between an owner (O) and his AI assistant (A), with its tool calls (T) and their results "
           "(R):\n{work}\n\nDraft AT MOST ONE lesson the assistant should learn from how this work went: where it got stuck and what "
           "fixed it, or an approach the owner approved. It must be a general principle that will matter again, not a detail of this "
           "project. If nothing in it is worth a lesson, reply exactly NONE. Otherwise reply with exactly these lines, in general "
-          "words, no names, paths or file names:\nSITUATION: <the context and what was being done>\nDID: <what the assistant did>\n"
-          "OUTCOME: <what happened: the snag and its fix, or what the owner approved>\nLESSON: <one general sentence>\n"
-          "SLUG: <2-4 words, kebab-case>")
+          "words, no names, paths or file names:\n" + REPLY)
 FIELDS = ("SITUATION", "DID", "OUTCOME", "LESSON", "SLUG")
 
 
@@ -42,7 +43,7 @@ def review(tp, marks, es):
     """Review the stretch since the last review up to the cut `marks`, queue at most one draft. Returns the draft dict, or None.
     Skipped (no brain call) when capture recorded an occurrence or a proposal in this stretch: it already holds the lesson.
     Raises on a failed call."""
-    import brain, patchfirst, tracechange
+    import brain, tracechange
     trace = tracechange.take_closed(tp)  # the feature his done just closed: its why and events come with the stretch
     prev = read().get(tp, {})
     if captured(prev, marks):
@@ -53,25 +54,32 @@ def review(tp, marks, es):
         return None
     work = f"Trace of the feature he just closed (its why and events):\n{trace}\n\nThe stretch:\n{work}" if trace else work
     out, _ = brain.ask(PROMPT.format(work=work), tag="work-review")
-    d = parse(out)
+    return queue(parse(out), "work")
+
+
+def queue(d, source):
+    """Privacy-scan the draft `d` (parse's dict, or None) and send it through patchfirst with this situation source: the same kind
+    of lesson as a saved one is an edit proposal, otherwise a new-lesson proposal. Returns d, or None (nothing, or dropped)."""
+    import patchfirst
     if not d:
         return None
     bad = [f"{k}: {v}" for k in ("SITUATION", "DID", "OUTCOME", "LESSON", "SLUG") for v in clean.violations(d[k], strict=True)]
     if bad:
-        ctx.log(f"workreview: draft dropped, privacy scan: {bad}")
+        ctx.log(f"workreview: {source} draft dropped, privacy scan: {bad}")
         return None
     c = json.dumps({"situation": d["SITUATION"], "assistant_did": d["DID"], "disliked": d["OUTCOME"]})
     patchfirst.propose({"situation": d["SITUATION"], "did": d["DID"], "disliked": d["OUTCOME"], "lesson": d["LESSON"], "slug": d["SLUG"]},
-                       "work", d["OUTCOME"], c)
+                       source, d["OUTCOME"], c)
     return d
 
 
-def release(tp, marks):
+def release(tp, marks, also=None):
     """Mark the stretch reviewed (up to the cut) and clear `running`; retried while the lock is busy, then written without it.
     Returns the transcript of a DONE that came in while this ran (the run is claimed for it), else None."""
     def mark(s):
         s.pop("running", None)
         marks and s.__setitem__(tp, marks)
+        also and also(s)  # reflect.py clears the sessions it handled in the same locked write
         again = s.pop("again", None)
         again and s.__setitem__("running", time.time())
         return again
@@ -101,11 +109,21 @@ def run(tp):
         again and spawn(again)
 
 
-def spawn(tp):
+def spawn(*args, script=os.path.abspath(__file__)):
     flags = (subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP) if os.name == "nt" else 0
     with open(ctx.LOG, "a", encoding="utf-8") as err:
-        subprocess.Popen([sys.executable, "-I", os.path.abspath(__file__), "run", tp], stdin=subprocess.DEVNULL,
+        subprocess.Popen([sys.executable, "-I", script, "run", *args], stdin=subprocess.DEVNULL,
                          stdout=subprocess.DEVNULL, stderr=err, creationflags=flags, close_fds=True)
+
+
+def claim(s, again=None):
+    """Take the one-run-at-a-time mark in the state `s`; False while a run younger than RUN_STALE_MIN holds it (an older one is a
+    crash). `again`: a transcript whose review is remembered to run after the holder."""
+    if time.time() - s.get("running", 0) < RUN_STALE_MIN * 60:
+        again and s.__setitem__("again", again)
+        return False
+    s["running"] = time.time()
+    return True
 
 
 def start(tp, done):
@@ -119,13 +137,7 @@ def start(tp, done):
             change(lambda s: s.setdefault(tp, m))
         if not due(tp, done):
             return False
-        def claim(s):
-            if time.time() - s.get("running", 0) < RUN_STALE_MIN * 60:
-                done and s.__setitem__("again", tp)
-                return False
-            s["running"] = time.time()
-            return True
-        if not change(claim):
+        if not change(lambda s: claim(s, tp if done else None)):
             return False
         spawn(tp)
         return True

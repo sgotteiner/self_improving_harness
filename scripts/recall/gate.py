@@ -4,7 +4,7 @@ stop_hook_active (never blocks twice in a row). The delegation check (delegate.p
 import json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx, relevance, verdicts  # stdlib only; brain/capture/retrieve import numpy and fastembed, so they load inside main()
+import ctx, delegvet, relevance, reviewloop, verdicts  # stdlib only; brain/capture/retrieve import numpy and fastembed, so they load inside main()
 
 
 def stop_limit():
@@ -87,19 +87,6 @@ def check(tp, exclude=()):
     return None
 
 
-def delegation(tp):
-    """The delegation gate's block reason, or None. Any error is logged and counts as no block."""
-    if not ctx.enabled("delegation-gate"):
-        return None
-    try:
-        import delegate
-        d, _ = delegate.output_step(tp)
-        return d[1] if d else None
-    except Exception as e:
-        ctx.log(f"gate: delegation failed: {e!r}")
-        return None
-
-
 def main():
     if ctx.skip_env("RECALL_GATE") or not ctx.enabled("output-gate"):
         return
@@ -113,12 +100,13 @@ def main():
         traceevents.at_stop(tp)  # agent returns and commits of this turn -> this session's open feature trace
     except Exception as e:
         ctx.log(f"gate: labelling or trace events failed: {e!r}")
+    loop = reviewloop.reason(tp)  # no model call; bounded by LOOP_MAX blocks per his message (review_loop.json); leads the one block
     owed = None  # a `capture.py write` is still unpaid (capowed.py): blocks once, fails open
-    try:
-        owed = capowed.settle(tp, d.get("stop_hook_active"))
+    try:  # on a loop Stop the reminder is checked as on a first Stop: its reason goes out in the same block, so it is never lost
+        owed = capowed.settle(tp, d.get("stop_hook_active") and not loop)
     except Exception as e:
         ctx.log(f"gate: capture check failed: {e!r}")
-    if d.get("stop_hook_active"):
+    if d.get("stop_hook_active") and not loop:
         return
     found = check(tp) or []  # both checks always run, so one block carries every reason (a block from one never hides the other)
     reasons = []
@@ -136,10 +124,10 @@ def main():
                 ctx.log(f"gate: capture marker failed: {e!r}")
         line = capverdict.block(tp, cid, why)  # his verdict on this block is counted from his next message
         reasons.append(f"Output gate (cases/{cid}.md): {why} Fix this now, then finish.{rec}{line}")
-    reasons += [r for r in (owed, delegation(tp)) if r]
+    reasons += [r for r in (owed, delegvet.reason(tp)) if r]
     verdicts.log(tp, "gate", "SENT" if reasons else "PASS", rule=str(len(reasons)))
-    if reasons:
-        print(json.dumps({"decision": "block", "reason": "\n".join(reasons)}))
+    if loop or reasons:  # the verdict logged above counts the gate's own reasons only; the loop's block is logged by reviewloop
+        print(json.dumps({"decision": "block", "reason": "\n".join(([loop] if loop else []) + reasons)}))
 
 
 if __name__ == "__main__":
