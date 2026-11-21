@@ -8,7 +8,7 @@ tasks/delegation-draft.md (fenced blocks and bullet lists), so editing either ch
 into the code. Both steps return (result, tokens) and raise on failure; the callers (hook.py, gate.py) fail open."""
 import os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx, praise, tracechange, turnfacts, verdicts
+import ctx, corrflag, praise, tracechange, turnfacts, verdicts
 import delegvet
 from delegvet import keys as _keys, need as _need, veto
 
@@ -74,15 +74,19 @@ def input_step(prompt, transcript):
     recent = "\n".join(l[:600] for l in recent)  # his new message may already be in the transcript: left out
     prev = f"{recent}\n\nThe assistant's previous full reply:\n{reply[-4000:] or '(none)'}\nIts tool calls: {'; '.join(tools) or 'none'}"
     import capverdict  # the same call also judges gate blocks awaiting his verdict
-    out, tok, trace = tracechange.ask(capverdict.ask, transcript, _fill(_prompt("Input step"), prev=prev, prompt=prompt) + praise.ask(), prompt, "delegate-in", reply)
-    out, liked = praise.take(out)  # slot success-capture: the same call also says whether he praised the previous turn
+    out, tok, trace = tracechange.ask(capverdict.ask, transcript, _fill(_prompt("Input step"), prev=prev, prompt=prompt) + praise.ask() + corrflag.ask(), prompt, "delegate-in", reply)
+    out, liked = praise.take(out)  # slot success-capture: the same call also says whether he praised the setup's recent work
+    out, flagged = corrflag.take(out)  # slot capture: a CORRECTION flag line on any kind
     m = re.match(r"\W*([A-Z]+(?:-[A-Z]+)?)", out.upper())
     kind = m.group(1) if m else ""
     capturing = ctx.enabled("capture") and reply.strip()
     import capwrite  # imported here, as in the correction branch below
     praised = [capwrite.success_instruction(liked, transcript, prompt)] if liked and capturing else []  # kept for any kind
+    def fixed(why):  # a correction: one capture line
+        return [capwrite.instruction(why or "not specified", transcript, prompt)] if capturing else []
+    corrected = kind == "CORRECTION" or bool(flagged)
     if kind not in INPUT_KINDS:
-        return praised, tok
+        return praised + (fixed(flagged) + trace(False, True) if flagged else []), tok  # the trace step still records the flag
     try:  # for the gate's context; a write failure must not lose the instruction
         __import__("gatectx").save_kind(transcript, prompt, kind)
     except OSError as e:
@@ -90,13 +94,11 @@ def input_step(prompt, transcript):
     lines = _lines("Instruction lines attached")
     rest = out.upper().partition("|" if kind == "CORRECTION" else kind)[2]
     extra = [lines[f] for f in ("DONE", "UNANSWERED") if re.search(r"\b" + f + r"\b", rest)]  # done -> SDD edit; ignored -> a no
-    extra += trace(kind, lines["DONE"] in extra)  # open / attach / close a feature trace
+    extra += trace(lines["DONE"] in extra, corrected)  # open / attach / close a feature trace
     extra += praised
-    if kind == "CORRECTION":
-        if not capturing:
-            return extra, tok
-        return [capwrite.instruction(out.partition("|")[2].strip() or "not specified", transcript, prompt)] + extra, tok
-    return [lines[kind]] + ([lines["TESTS"]] if kind in ("TASK", "CONFIRMATION") else []) + extra, tok
+    if kind == "CORRECTION":  # the kind's own sentence wins over a flag line
+        return fixed((out.partition("|")[2].strip().splitlines() or [""])[0]) + extra, tok
+    return [lines[kind]] + ([lines["TESTS"]] if kind in ("TASK", "CONFIRMATION") else []) + (fixed(flagged) if flagged else []) + extra, tok
 
 
 def output_step(transcript, root=ctx.ROOT):

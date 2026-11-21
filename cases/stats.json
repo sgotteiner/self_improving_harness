@@ -12,9 +12,9 @@
   "wrong": 0
  },
  "decide-trivial-choices-dont-ask": {
-  "ignored": 5,
+  "ignored": 2,
   "missed": 5,
-  "right": 1,
+  "right": 4,
   "wrong": 0
  },
  "design-for-no-tracking": {
@@ -24,9 +24,9 @@
   "wrong": 0
  },
  "fix-the-class-not-the-instance": {
-  "ignored": 1,
+  "ignored": 0,
   "missed": 0,
-  "right": 0,
+  "right": 1,
   "wrong": 0
  },
  "give-context-when-asking-him": {
@@ -36,7 +36,7 @@
   "wrong": 0
  },
  "report-without-testing": {
-  "ignored": 7,
+  "ignored": 8,
   "missed": 2,
   "right": 0,
   "wrong": 0

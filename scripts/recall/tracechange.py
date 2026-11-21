@@ -10,7 +10,7 @@ from tracing import NEW, NONE, NO_WHY, SEP, SITUATION, TITLE_MAX, WHY_MAX, add_e
 
 def ask(fn, tp, text, prompt, tag, reply):
     """The message step's one model call with the trace section added to `text`: fn(tp, text, tag, reply).
-    -> (the reply without its TRACE line, tokens, trace(kind, done) which applies that line -> [the record instruction] or [])."""
+    -> (the reply without its TRACE line, tokens, trace(done, corrected) which applies that line -> [the record instruction] or [])."""
     try:
         proj = project(tp)  # once for the whole step
     except Exception as e:
@@ -18,12 +18,12 @@ def ask(fn, tp, text, prompt, tag, reply):
         proj = ""
     out, tok = fn(tp, text + tracing.ask_text(tp, proj, prompt), tag, reply)
     out, tline = tracing.take(out)  # its title and why quote must not be read as kind or flags
-    return out, tok, lambda kind, done: apply(tp, proj, tline, kind, prompt, done)
+    return out, tok, lambda done, corrected: apply(tp, proj, tline, corrected, prompt, done)
 
 
-def apply(tp, proj, tline, kind, prompt, done):
-    """Open, attach to or close a trace from the message step's TRACE line. -> [the one 'record this trace' instruction] when this
-    message (DONE) closed a trace, else []."""
+def apply(tp, proj, tline, corrected, prompt, done):
+    """Open, attach to or close a trace from the message step's TRACE line. corrected: his message corrects the assistant (kind
+    CORRECTION or the flag line). -> [the one 'record this trace' instruction] when this message (DONE) closed a trace, else []."""
     try:
         if not proj:
             return []
@@ -49,11 +49,11 @@ def apply(tp, proj, tline, kind, prompt, done):
             op = mine(rows, tp)
             r = next((x for x in op if x["tid"].lower() == word.lower()), None)
             if not r and word.upper() != NONE:  # no tid: a correction goes to the latest open trace, a done to the only one
-                r = latest_open(rows, tp) if kind == "CORRECTION" else op[0] if done and len(op) == 1 else None
+                r = latest_open(rows, tp) if corrected else op[0] if done and len(op) == 1 else None
             if not r:
                 return []
-            mark = kind == "CORRECTION" and ctx.enabled(tracing.LINK_SLOT)  # the key lets the write that pays this message find the event
-            add_event(r, tp, "correction" if kind == "CORRECTION" else "done" if done else "message", prompt,
+            mark = corrected and ctx.enabled(tracing.LINK_SLOT)  # the key lets the write that pays this message find the event
+            add_event(r, tp, "correction" if corrected else "done" if done else "message", prompt,
                       capowed.key(tp, prompt) if mark else "")
             if not done:
                 return []

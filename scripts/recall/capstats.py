@@ -56,3 +56,14 @@ def put(lesson_id, counts):
     """Give a lesson its counts back (undoes take when an archive fails)."""
     if counts:
         _modify(lambda s: s.__setitem__(lesson_id, counts), f"put {lesson_id}")
+
+
+def move(lesson_id, src, dst, n):
+    """Move n counts of one lesson from key src to key dst (his verdict on blocks that were counted ignored); never below 0."""
+    def change(s):
+        c = {k: s.get(lesson_id, {}).get(k, 0) for k in KEYS}
+        n_ = min(n, c[src])
+        c[src] -= n_
+        c[dst] += n_
+        s[lesson_id] = c
+    _modify(change, f"move {lesson_id} {src}->{dst}")
