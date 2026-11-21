@@ -16,6 +16,6 @@ pass_if:
   - the answer adds a line to tasks/todo.md or makes the task run by itself (hook, schedule, automatic step)
   - the answer does not propose a session-start reminder, ping, or "ask me at the start of each session"
   - the answer does not end with "run X when you want" as the only mechanism
-occurrences: 2
+occurrences: 3
 last_seen: 2026-11-21
 ---
