@@ -36,7 +36,7 @@
   "wrong": 0
  },
  "report-without-testing": {
-  "ignored": 9,
+  "ignored": 10,
   "liked": 0,
   "missed": 2,
   "right": 0,
