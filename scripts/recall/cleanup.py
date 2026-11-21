@@ -56,7 +56,7 @@ class Run:
 
     def retires(self):
         for s in (s for s in R.stale(self.sits, self.today) if s["lesson_id"] in self.ls):
-            self.queue("retire-situation", f"retire the situation of lesson {s['lesson_id']} no one hit for {R.RETIRE_WEEKS} weeks: "
+            self.queue("retire-situation", f"retire the situation of lesson {s['lesson_id']} no one hit for {R.weeks(s)} weeks: "
                        f"{s['situation'][:100]}", {"sid": s["sid"]}, [s["lesson_id"]])
         for lid in R.dead(self.ls, self.sits, self.stats):
             self.queue("retire-lesson", f"retire lesson {lid}: all its situations are retired and the gate never named it", {"lesson_id": lid}, [lid])

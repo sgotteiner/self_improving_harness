@@ -6,6 +6,8 @@ WRONG_MIN = 3        # gate blocks he judged wrong, at least this many and more 
 MISSED_MIN = 3       # repeats he had to correct himself (the gate missed them) -> reword
 NEWKIND_MIN = 2      # firings that matched none of the lesson's situations -> the lesson should widen -> reword
 RETIRE_WEEKS = 4     # a situation with no hit this long (counted from its date or last hit) -> retire it
+LIKED_RETIRE_WEEKS = 26  # the same for a situation of a success or work lesson: no gate verdict ever hits those, so they wait longer
+LIKED_SOURCES = ("success", "work")
 REVERT_MISSED = 2    # missed rising by this much ...
 REVERT_DAYS = 28     # ... within this many days of an applied edit -> propose the old wording back
 COOLDOWN_DAYS = 28   # a lesson that had a text proposal (any answer) this recently gets no new reword or merge
@@ -70,9 +72,13 @@ def reasons(lids, stats, rows, notes):
     return out
 
 
+def weeks(s):
+    return LIKED_RETIRE_WEEKS if s["source"] in LIKED_SOURCES else RETIRE_WEEKS
+
+
 def stale(sits, today):
-    """Active situations with no hit for RETIRE_WEEKS since max(date, last_hit)."""
-    return [s for s in sits if s["status"] == "active" and age(max(s["date"] or "", s["last_hit"] or ""), today) >= RETIRE_WEEKS * 7]
+    """Active situations with no hit for RETIRE_WEEKS (LIKED_RETIRE_WEEKS for success and work) since max(date, last_hit)."""
+    return [s for s in sits if s["status"] == "active" and age(max(s["date"] or "", s["last_hit"] or ""), today) >= weeks(s) * 7]
 
 
 def dead(lids, sits, stats):

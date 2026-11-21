@@ -4,7 +4,7 @@ import json, os
 
 import ctx, index, mdfile
 
-KEYS = ("right", "wrong", "missed", "ignored")
+KEYS = ("right", "wrong", "missed", "ignored", "liked")  # liked: a success write repeating the lesson (old files lack it: read as 0)
 
 
 def _modify(change, what):

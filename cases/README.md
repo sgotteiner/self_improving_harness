@@ -3,7 +3,7 @@
 One file per past mistake, `<slug>.md`. Search matches the request against `situation`; replay tests the setup.
 
 - Frontmatter: `id`, `date` (when it happened), `source` (file where it is recorded).
-- `situation`: 2-4 phrasings of how this shows up in a request. Search matches on these.
+- `situation`: 1-4 phrasings of how this shows up in a request (a lesson approved from a proposal starts with 1; aim for 2+ when writing one by hand). Search matches on these.
 - `wrong` / `right`: what was done wrong, what to do instead. `lesson`: one sentence.
 - `level`: `advice` (default; brought in when the situation repeats), `check` (verified at the output gate before finishing), `rule` (hard rule in code).
 - `occurrences` (count) and `last_seen` (date): maintained by the hooks. Each real occurrence is a recall example of its case, stored in `cases/history/<id>.md` as one block: situation, what the assistant did, what he did not like (his words, in general wording), and the lesson it belongs to. The brain rewrites the raw words into this structure (no names, paths, people or session ids; an occurrence that still fails a privacy scan is not stored). The raw words and transcript path stay only in the local `scripts/recall/history.db`. Every block is embedded as its own document for the case, next to the case fields. Nothing is generated or made up: examples are real occurrences only.

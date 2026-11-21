@@ -4,7 +4,7 @@ His yes or ignore comes through proposals.py. A failed call counts as NEW (the c
 import os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import brain, clean, ctx, history, pending, proposals, situations, views
+import brain, capstats, clean, ctx, history, pending, proposals, situations, situtrace, views
 
 COMPARE = ("Lessons an AI coding assistant learned from its mistakes (id: lesson. Right: what to do instead):\n{lessons}\n\n"
            "A new lesson was just drafted from a new mistake:\n{new}\n\nIs the new lesson the same kind of mistake as one of the "
@@ -24,6 +24,18 @@ def compare(lesson, situation=""):
     m = SAME.match(out)
     cid = m.group(1).strip("`*<>.,|") if m else ""
     return (cid, (m.group(2) or "").strip(" `") or lesson) if cid in ls else None
+
+
+def repeated(lid, d, src, same=lambda r: False):
+    """His correction repeating lesson lid counts missed, his praise of it counts liked; either traces the closest situation (a hit).
+    `same(row)` is true for the situation of this case if already stored (left out). Other sources count nothing. Fails open."""
+    key = {"correction": "missed", "success": "liked"}.get(src)
+    if key:
+        try:
+            capstats.bump(lid, key)
+        except Exception as e:
+            ctx.log(f"patchfirst: {key} not counted on {lid}: {e!r}")
+        situtrace.fire(lid, f"{d['situation']} The assistant did: {d['did']}", same)
 
 
 def _edit(d, src, raw, c, cid, wording, sids=None):
@@ -58,6 +70,7 @@ def propose(d, src, raw, c, sids=None, paid=None):
         ctx.log(f"patchfirst: reworded lesson of {same[0]} failed the privacy scan, treated as new: {bad}")
         same = None
     if same:
+        repeated(same[0], d, src)  # counted at once, whatever happens to the wording proposal
         return _edit(d, src, raw, c, *same, sids)
     slug = pending.slugify(d["slug"], pending.DEFAULT_SLUG)
     proposals.queue("new-lesson", f"add the lesson {slug}: {d['lesson']}", {
