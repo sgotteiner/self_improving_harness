@@ -39,7 +39,13 @@ def apply(tp, proj, tline, corrected, prompt, done):
             if not title.strip():
                 return []
             def make(rows):
-                src = tracing.origin(rows, tp, frm) if ctx.enabled(tracing.LINK_SLOT) else None  # before the new row: it is not its own origin
+                link = ctx.enabled(tracing.LINK_SLOT)
+                src = tracing.origin(rows, tp, frm) if link else None  # before the new row: it is not its own origin
+                if corrected:  # a correction that starts new work is still a correction: on the trace it came from, else the latest open
+                    r = next((x for x in mine(rows, tp) if src and x["tid"] == src["tid"]), None) or latest_open(rows, tp)
+                    if r:
+                        add_event(r, tp, "correction", prompt, capowed.key(tp, prompt) if link else "")
+                        src = tracing.origin(rows, tp, frm) if link else None  # again: its event index now names this correction
                 rows.append(dict(tid=f"t{len(rows) + 1}", project=proj, session=tp, title=flat(title, TITLE_MAX),
                                  why=flat(why.strip(" `*") or NO_WHY, WHY_MAX), opened=str(datetime.date.today()), events=[], closed=None,
                                  **({"from": src} if src else {})))

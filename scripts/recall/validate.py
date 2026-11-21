@@ -9,6 +9,7 @@ REQUIRED = ["id", "date", "level", "situation", "wrong", "right", "lesson", "rep
 HUMAN = ["situation", "wrong", "right", "lesson", "replay", "pass_if"]  # the fields a person (or the draft brain) wrote
 LEVELS = ("advice", "check", "rule")
 MAX_RANK = 2
+MIN_SITUATIONS = 1  # a lesson approved from a proposal starts with the one situation it came from; the store adds the rest
 
 
 def texts(d):
@@ -24,8 +25,8 @@ def check_fields(path, d):
         bad.append("missing or empty: " + ", ".join(miss))
     if d.get("level") and d["level"] not in LEVELS:
         bad.append(f"level {d['level']!r} not in {LEVELS}")
-    if d.get("situation") and not 2 <= n <= 4:
-        bad.append(f"situation has {n} items, need 2-4")
+    if d.get("situation") and not MIN_SITUATIONS <= n <= 4:
+        bad.append(f"situation has {n} items, need {MIN_SITUATIONS}-4")
     if d.get("id") and d["id"] != os.path.basename(path)[:-3]:
         bad.append(f"id {d['id']!r} differs from the file name")
     return not bad, "; ".join(bad) or f"{len(REQUIRED)} required fields present and non-empty, situation {n}, level {d['level']}"
@@ -66,8 +67,8 @@ def check_recall(path, d):
     cid, e = d["id"], d.get("situation", [])
     qs = [("lesson", d.get("lesson", ""))] + [(f"situation[{i}]", e[i]) for i in range(min(2, len(e)))]
     qs = [(n, q) for n, q in qs if q]
-    if len(qs) < 3:
-        return False, "need a lesson and 2 situation lines to test"
+    if len(qs) < 1 + MIN_SITUATIONS:
+        return False, f"need a lesson and {MIN_SITUATIONS} situation line(s) to test"
     base = retrieve.docs()
     if cid not in base:
         return False, "case is not in the retrieval documents"

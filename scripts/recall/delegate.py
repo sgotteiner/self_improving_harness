@@ -15,7 +15,7 @@ from delegvet import keys as _keys, need as _need, veto
 CLAUDE_MD = os.path.join(ctx.ROOT, "CLAUDE.md")
 DRAFT = os.path.join(ctx.ROOT, "tasks", "delegation-draft.md")
 SLOT = "delegation-gate"  # the output step; the input step runs under `delegation-hook`
-INPUT_KINDS = ("QUESTION-YESNO", "QUESTION-OPEN", "TASK", "TALK", "CONFIRMATION", "CORRECTION")
+INPUT_KINDS = ("QUESTION-YESNO", "QUESTION-OPEN", "TASK", "TALK", "CONFIRMATION", "FEEDBACK", "CORRECTION")
 LINE_KINDS = tuple(k for k in INPUT_KINDS if k != "CORRECTION")  # CORRECTION's line is capwrite.instruction
 BLOCK_KINDS = ("TESTER", "TESTER-HERE", "REVIEWER", "KNOWLEDGE-MANAGER", "LOOP", "SETUP-MANAGER")
 

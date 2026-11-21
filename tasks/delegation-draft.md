@@ -26,8 +26,9 @@ What kind of message is it? Reply with exactly one word, and for CORRECTION add 
 QUESTION-YESNO: a new question from him that a yes or no answers.
 QUESTION-OPEN: a new bigger question (why, how, what is, he does not understand, he does not know).
 TASK: he asked the assistant to do or change something.
-TALK: he shares thoughts, consults, comments, or says thanks; nothing is asked or to be done.
+TALK: he shares thoughts, consults, comments, or says thanks; nothing is asked or to be done. Not feedback on what the setup did (that is FEEDBACK).
 CONFIRMATION: a short reply that answers or finalises the assistant's own question or proposal (a yes, ok, go ahead, a choice between its options, the final wording of what it proposed). Never a question, even when it has the form of one.
+FEEDBACK: he gives feedback on what the setup did (he liked something it did, or a verdict on a gate catch, "good job") and asks for nothing else. A message that says the assistant did something wrong is always CORRECTION, never FEEDBACK.
 CORRECTION: he says the assistant got something wrong or did not follow him: "I told you", "that's not what I asked", "why did you", an ignored instruction, a missed point (how it behaved, not what it built).
 When unsure between TASK and anything else, pick the one that makes the assistant ask before acting.
 Then, on a second line, the flags that apply (or NONE):
@@ -42,8 +43,9 @@ Instruction lines attached to the main session's context (the brain's word picks
 - TASK: He asked you to do something: first say back what he asked and how it helps him, and ask him to confirm. Don't start or delegate until he says yes.
 - CONFIRMATION: He confirmed the task you said back: delegate it to the implementer now, with Why, task, paths and the test command.
 - TALK: He is talking it through: give your feedback and opinion. Don't act.
+- FEEDBACK: He gave feedback on what the setup did (praise, or a verdict on a gate catch): record it now with the capture line attached to this message, say in one line what you saved and to which lesson, then continue the work you were on. Don't ask anything about it.
 - DONE: He says it's done: in this reply, propose the SDD edit — what changed, shown as the change to the doc. Only after his yes, the knowledge-manager writes it. For ideas, diary or flags: ask him only if something belongs there, with the exact line. After the knowledge-manager returns, check `git status` in the project's repo and in the Vault: commit what belongs to this feature and anything else that is good, one commit per feature; delete what is junk; ask him in one line only about a change you can't judge.
-- UNANSWERED: Your suggestion in the previous reply was not answered: it's a no. Don't repeat it and don't save it anywhere.
+- UNANSWERED: Your suggestion in the previous reply was not answered: it's a no. Don't repeat that suggestion and don't save it anywhere (his feedback in this message is still captured).
 - TESTS: Tests: a check that verifies what he asked for is part of the task: run it and report the result. Propose only a check beyond that (for what failed or may fail elsewhere), with the failure it prevents in one line; run that one only after his yes.
 
 ## Output step (gate.py, before the reply)
