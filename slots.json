@@ -91,5 +91,9 @@
   "work-learning": {
     "enabled": true,
     "about": "a detached background review (workreview.py) of the work since the last review, at his done (the message step's DONE) and every 10 human turns; drafts at most one lesson (source work) through patchfirst, so it reaches him only as the proposal line"
+  },
+  "session-map": {
+    "enabled": true,
+    "about": "SessionStart hook (scripts/recall/sessionmap.py): prints the project's map top level, the State lines of its SDD note and its open Todo items, so a new session knows the project; off = prints nothing"
   }
 }

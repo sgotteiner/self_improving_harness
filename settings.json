@@ -134,6 +134,10 @@
           {
             "type": "command",
             "command": "python -I C:/my_projects/.claude-config/scripts/setup_diagram.py"
+          },
+          {
+            "type": "command",
+            "command": "python -I C:/my_projects/.claude-config/scripts/recall/sessionmap.py"
           }
         ]
       }
