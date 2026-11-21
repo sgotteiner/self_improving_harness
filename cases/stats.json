@@ -49,7 +49,7 @@
  "report-without-testing": {
   "ignored": 10,
   "liked": 0,
-  "missed": 2,
+  "missed": 3,
   "right": 0,
   "wrong": 0
  },

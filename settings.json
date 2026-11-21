@@ -31,7 +31,9 @@
       "Bash(git push *)"
     ],
     "additionalDirectories": [
-      "C:/my_projects"
+      "C:/my_projects",
+      "C:/Users/D154~1/AppData/Local/Temp/claude",
+      "C:/Users/שגיא/AppData/Local/Temp/claude"
     ]
   },
   "model": "opus",
