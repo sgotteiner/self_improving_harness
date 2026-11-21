@@ -4,13 +4,14 @@ His yes (anything else is a no, for good) comes through proposals.py. A failed c
 import os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import brain, capstats, clean, ctx, history, pending, proposals, situations, situtrace, views
+import brain, capstats, clean, ctx, history, pending, proposals, relevance, situations, situtrace, views
 
 COMPARE = ("Lessons an AI coding assistant learned from its mistakes (id: lesson. Right: what to do instead):\n{lessons}\n\n"
            "A new lesson was just drafted from a new mistake:\n{new}\n\nIs the new lesson the same kind of mistake as one of the "
            "lessons above (the same underlying behaviour, even when the wording or the situation differs), or a different kind? "
-           "Reply with exactly one line: `SAME <id> | <that lesson reworded as ONE general sentence that also covers the new "
-           "case>` or `NEW`.")
+           "Reply with exactly one line: `SAME <id> | <1-5> | <that lesson reworded as ONE general sentence that also "
+           "covers the new case>` or `NEW`. The score is how sure you are that it is the same kind of mistake: 5 = certain, 3 = "
+           "they only share a topic or a situation, 1 = unrelated.")
 SAME = re.compile(r"\W*SAME\s+(\S+)\s*(?:\|\s*(.*))?", re.I)
 
 
@@ -23,7 +24,13 @@ def compare(lesson, situation=""):
     out, _ = brain.ask(COMPARE.format(lessons=text, new=lesson + (f" (situation: {situation})" if situation else "")), tag="patch-first")
     m = SAME.match(out)
     cid = m.group(1).strip("`*<>.,|") if m else ""
-    return (cid, (m.group(2) or "").strip(" `") or lesson) if cid in ls else None
+    if cid not in ls:
+        return None
+    score, wording = relevance.split(m.group(2) or "")
+    if score is None or score < relevance.RELEVANCE_MIN:  # a missing score or a weak match is NEW: he is asked, no count inflated
+        ctx.log(f"patchfirst: {cid} matched with score {score}, below {relevance.RELEVANCE_MIN}: treated as new")
+        return None
+    return cid, wording.strip(" `") or lesson
 
 
 def repeated(lid, d, src, same=lambda r: False):

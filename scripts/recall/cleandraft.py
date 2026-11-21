@@ -5,7 +5,7 @@ Usage: python -I scripts/recall/cleandraft.py eval   (real calls on the labelled
 import os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import brain, clean
+import brain, clean, relevance
 
 REWORD = ("A lesson an AI coding assistant learned from its mistakes:\n{lesson}\nRight: {right}\n\nProblem: {why}\nReal situations "
           "behind it:\n{sits}\n\nReword the lesson as ONE general sentence that fixes the problem and still covers every kind of "
@@ -20,10 +20,10 @@ CHECK = ("A lesson's new wording: {text}\n\nThe lessons it replaces (id: lesson.
          "(1) is each Right above a direct instance of the one new sentence, i.e. doing the Right is doing what the sentence says "
          "(a Right may be more specific; who performs the action and the exact commands do not matter, only WHAT is done)? FAIL when the sentence has an `or` joining two different actions to choose between, or "
          "doing it takes two different actions; saying plainly that the action was not done is not a second action. (2) Does it still cover the kind of mistake of EVERY "
-         "situation, without becoming empty or vague? Reply `OK` or `FAIL | <which lesson or situation, why>`.")
+         "situation, without becoming empty or vague? Reply `<1-5> | OK` or `<1-5> | FAIL | <which lesson or situation, why>`; the score is how sure you are that the wording is acceptable (5 = certain, 3 = doubtful).")
 PAIR = ("A lesson's new wording: {text}\n\nOne lesson it replaces: {lesson}\nRight: {right}\n\nIs that lesson's Right a direct "
         "instance of the new wording (doing that Right is doing what the new wording says; the Right may be more specific; who performs it does not matter; the "
-        "wording must not need a different action or an `or` between two different actions)? Reply `OK` or `FAIL | <why>`.")
+        "wording must not need a different action or an `or` between two different actions)? Reply `<1-5> | OK` or `<1-5> | FAIL | <why>`; the score is how sure you are that it is acceptable (5 = certain, 3 = doubtful).")
 MERGE_LINE = re.compile(r"MERGE\s+([^|]+?)\s*\|\s*(.+)", re.I)
 
 
@@ -51,10 +51,14 @@ def merges(ls):
 
 
 def _ok(prompt, tag):
-    """"" when the model answered OK, else its FAIL text (an unreadable answer is a fail)."""
+    """"" when the model answered OK with a score of RELEVANCE_MIN or above, else its FAIL text (an unreadable answer, a missing
+    score or a doubtful one is a fail: a merge not proposed now comes back at the next run)."""
     out, _ = brain.ask(prompt, tag=tag)
-    out = out.strip(" `*")
-    return "" if out.upper().startswith("OK") else (out or "empty answer")
+    score, rest = relevance.split(out.strip(" `*"))
+    rest = rest.strip(" `*")
+    if not rest.upper().startswith("OK"):
+        return rest or "empty answer"
+    return "" if score is not None and score >= relevance.RELEVANCE_MIN else f"not sure enough ({score}): {out[:150]}"
 
 
 def why_not(text, sources, sits):

@@ -15,8 +15,8 @@ Next things, in order. Done items get checked, not deleted.
 - [ ] T8–T10 — automatic weekly updates, slots + IDEAS rows
 - [x] Knowledge-manager: record in the setup's SDD that the setup is in git (2 repos, what's excluded) (obsolete: the SDD records the two repos and what is excluded)
 - [ ] Later: promote lessons that keep firing into the owning agent's rules (cleanup proposals cover reword, merge, retire only)
-- [ ] Patch-before-create matches too loosely: a correction about unapproved tests was filed as a repeat of scope-searches-by-known-context (2026-11-21)
-- [ ] Merge check inconsistent: design-for-no-tracking + give-context-when-asking-him was proposed although the eval rejects that pair (2026-11-21)
+- [x] Patch-before-create matches too loosely (2026-11-21): the compare call now returns a 1-5 score and a SAME counts only at 4-5, else NEW; live: unapproved-tests correction -> NEW, report-without-testing paraphrase -> SAME
+- [x] Merge check inconsistent (2026-11-21): every path already called the check, but its bare OK/FAIL was non-deterministic; it now answers with a 1-5 score and OK counts only at 4-5 (a missing score fails); eval and the rejected pair re-run
 - [ ] Lessons v2 — read `python -I scripts/recall/shadow.py report` and the first proposals' verdicts after a week of use (2026-11-27)
 - [x] Success capture (praise → lesson, slot `success-capture`): done 2026-11-21. The reviewer's fixes were applied (liked text field, praise+correction markers, unknown kind, double privacy hit, nits); live check passed (PRAISE line returned, instruction printed, a success write accepted and matched by patch-before-create).
 - [x] Trace links: at his first real approval of a new lesson, check that its situation's sid appears on the trace's correction event (traces/claude-config.jsonl). The full approval path was only checked with approve stubbed (2026-11-21). (done 2026-11-21: run unstubbed on scratch copies it failed at approve: validate demanded 2-4 situations, a proposal's lesson has 1; MIN_SITUATIONS = 1 in validate.py, then the sid is on the correction event.)
