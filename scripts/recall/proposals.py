@@ -1,21 +1,22 @@
 """The one proposal queue: cases/_pending/proposals.jsonl (local, never pushed), one line per proposal to change the knowledge
-(kinds in propapply.py). One a day at most, and one outstanding at a time. The hook offers it (line) as one line the session ends
-its reply with (`proposal: <text> -- yes / ignore`, the way the gate's `gate:` line works); it counts as shown only when that
-reply has the line, and his next message in that session is judged by the message step's one call (propread.py): YES applies it,
-anything else drops it. Nothing is deleted: a line only changes status (queued, offered, shown, applied, dropped, failed).
-Every function fails open: a broken queue never stops a hook. Stdlib only."""
+(kinds in propapply.py). No limit and no waiting: a proposal is shown in the very next reply, all of them in one, one line each
+(offer: a capture write ends its own reply with it; line: the hook attaches those a background producer queued). The session ends
+its reply with `proposal <id>: <text> -- yes / no`; it counts as shown only when that reply has the line, and his next message in
+that session is judged by the message step's one call (propread.py): YES applies it, anything else drops it, for good (a proposal
+whose reply lacked its line is offered once more). A dropped or failed change is not queued again (queue, propkey). Nothing is deleted: a line only changes status (queued, offered, shown, applied, dropped,
+failed). Every function fails open: a broken queue never stops a hook. Stdlib only."""
 import datetime, json, os, sys, tempfile, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx, index, mdfile
+import ctx, index, mdfile, propkey
 
 QUEUE_FILE = "proposals.jsonl"
 QUEUED, OFFERED, SHOWN, APPLIED, DROPPED, FAILED = "queued", "offered", "shown", "applied", "dropped", "failed"
-OPEN = (OFFERED, SHOWN)  # at most one line is in these at a time
-DAY = 86400  # an offer nobody answered goes back to the queue, a shown one nobody answered is dropped (no answer = no)
+OPEN = (OFFERED, SHOWN)  # told to the session / waiting for his next message
+DAY = propkey.DAY  # an open proposal nobody answered in this time is dropped (no answer = no)
 PID_FORMAT = "p%04d"
 OFF_MARK = os.path.join(tempfile.gettempdir(), "recall-proposals-off")  # the day the "proposals are off" note was logged
-LINE = "End your reply with this one line, as written: `proposal: {text} — yes / ignore`."
+LINE = "End your reply with this one line, as written: `proposal {pid}: {text} -- yes / no`."
 
 
 def path():
@@ -42,12 +43,20 @@ def change(fn):
 
 
 def queue(kind, text, data):
-    """Add a proposal (kind: see propapply.KINDS); returns its pid, or None when the same one is already open."""
+    """Add a proposal (kind: see propapply.KINDS); returns its pid, or None when the same change is already open, or was dropped
+    or failed (propkey: for good, or for DROP_DAYS unless a new real occurrence is attached; logged)."""
     def add(rows):
-        if any(r["kind"] == kind and r["data"] == data and r["status"] in (QUEUED,) + OPEN for r in rows):
-            return None
+        for r in rows:
+            if propkey.key(r["kind"], r["data"]) != propkey.key(kind, data):
+                continue
+            if r["status"] in (QUEUED,) + OPEN:
+                return None
+            if r["status"] in (DROPPED, FAILED) and propkey.blocks(r, kind, data, time.time()):
+                ctx.log(f"proposals: skipped, {r['pid']} with the same change was {r['status']}: {text[:100]}")
+                return None
         rows.append({"pid": PID_FORMAT % (len(rows) + 1), "kind": kind, "text": " ".join(text.split()), "data": data,
-                     "status": QUEUED, "created": str(datetime.date.today()), "shown": None, "tp": None, "at": 0})
+                     "status": QUEUED, "created": str(datetime.date.today()), "shown": None, "tp": None, "at": 0,
+                     "sits": propkey.sits()})
         return rows[-1]["pid"]
     return change(add)
 
@@ -67,33 +76,48 @@ def readable(today):
 
 
 def _expire(rows):
+    """An offered or shown proposal nobody answered for a day is dropped, never shown again (no answer = no)."""
     now = time.time()
     for r in rows:
         if r["status"] in OPEN and now - r.get("at", 0) > DAY:
-            if r["status"] == OFFERED:
-                r.update(status=QUEUED, tp=None)
-            else:
-                r["status"] = DROPPED
-                try:
-                    __import__("propapply").drop(r)
-                except Exception as e:
-                    ctx.log(f"proposals: situations of unanswered {r['pid']} not retired: {e!r}")
+            r["status"] = DROPPED
+            try:
+                __import__("propapply").drop(r)
+            except Exception as e:
+                ctx.log(f"proposals: situations of unanswered {r['pid']} not retired: {e!r}")
+
+
+def _offer(r, tp):
+    r.update(status=OFFERED, tp=tp, at=time.time())
+    return LINE.format(pid=r["pid"], text=r["text"])
+
+
+def offer(pid, tp):
+    """The instruction for the session (transcript tp) to end this very reply with proposal pid (a capture write just made it);
+    "" when it cannot be answered (no session, or the steps that read his yes are off): the hook's line then attaches it."""
+    try:
+        ok = bool(pid and tp) and readable(str(datetime.date.today()))
+
+        def pick(rows):
+            r = next((r for r in rows if r["pid"] == pid and r["status"] == QUEUED), None)
+            return _offer(r, tp) if r and ok else ""
+        return change(pick)
+    except Exception as e:
+        ctx.log(f"proposals: offer failed: {e!r}")
+        return ""
 
 
 def line(tp, today=None):
-    """The instruction for the session (transcript tp) to end its reply with the next queued proposal; "" if none, one is
-    outstanding, or one was shown today. The proposal is only offered: propread.waiting marks it shown once the reply has it."""
+    """The instructions for the session (transcript tp) to end its reply with every queued proposal, one line each: [] if none.
+    The proposals are only offered: propread.waiting marks each shown once the reply has its line, and drops it otherwise."""
     try:
         today = today or str(datetime.date.today())
 
         def pick(rows):
             _expire(rows)
-            r = next((r for r in rows if r["status"] == QUEUED), None)
-            if not r or any(x["status"] in OPEN or x["shown"] == today for x in rows) or not readable(today):
-                return ""
-            r.update(status=OFFERED, tp=tp, at=time.time())
-            return LINE.format(text=r["text"])
-        return change(pick) if os.path.exists(path()) else ""
+            queued = [r for r in rows if r["status"] == QUEUED]
+            return [_offer(r, tp) for r in queued] if queued and readable(today) else []
+        return change(pick) if os.path.exists(path()) else []
     except Exception as e:
         ctx.log(f"proposals: line failed: {e!r}")
-        return ""
+        return []

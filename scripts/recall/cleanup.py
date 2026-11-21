@@ -1,4 +1,4 @@
-"""Cleanup of the lessons: queues proposals (proposals.py shows one a day, his yes applies it) from the rules in cleanrules.py:
+"""Cleanup of the lessons: queues proposals (the hook shows them with the next reply, his yes applies them) from the rules in cleanrules.py:
 reword (often wrong, often missed, new kinds keep coming), retire a situation or a lesson, merge same-kind lessons when the
 all-lessons text is over alllessons.SIZE_LIMIT, revert an edit or merge after which `missed` rose. A reworded or merged text is
 checked (cleandraft.why_not) against its lessons and their active situations before it is queued (a failing one is logged, not
@@ -77,7 +77,7 @@ class Run:
             if bad:
                 ctx.log(f"cleanup: merge of {ids} not queued ({bad[:150]}): {text[:100]!r}")
             else:
-                self.queue("merge", f"merge lessons {', '.join(ids)} into {ids[0]}: {text}", {"into": ids[0], "from": ids[1:], "text": text}, ids)
+                self.queue("merge", f"merge {', '.join(ids[:-1])} and {ids[-1]} into: {text}", {"into": ids[0], "from": ids[1:], "text": text}, ids)
 
 
 def go(today):

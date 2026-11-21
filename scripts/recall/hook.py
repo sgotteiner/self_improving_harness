@@ -78,11 +78,11 @@ def main():
     if ctx.enabled("delegation-hook"):  # one call: his kind of message; a correction (slot capture) makes the session write the case
         kind_lines = stage("delegation", lambda: __import__("delegate").input_step(prompt, tp)[0], [])
         drafted = next((l for l in kind_lines if l.startswith("Capture:")), None)
-    # the day's proposal line (proposals.py shows none when the step that reads his yes, or capture, is off)
+    # the proposal lines (proposals.py shows none when the step that reads his yes, or capture, is off)
     if ctx.enabled("work-learning"):  # learning from the work: at his done (the message step's DONE line) or every LEARN_TURNS turns, detached
         stage("work-learning", lambda: __import__("workreview").start(tp, __import__("delegate").is_done(kind_lines)), None)
     stage("cleanup", lambda: __import__("cleanrun").start(), None)  # the lessons' upkeep: weekly or over the size limit, detached
-    kind_lines += stage("proposal", lambda: [l for l in (__import__("proposals").line(tp),) if l], [])
+    kind_lines += stage("proposal", lambda: __import__("proposals").line(tp), [])  # every queued proposal, one line each
     if ctx.enabled("decision-capture"):  # diary drafts: collected silently, like captured mistakes
         if drafted:  # the same message was a correction of his assistant, not a design decision
             ctx.log("hook: decision detection skipped, mistake capture asked the session to write a case")

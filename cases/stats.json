@@ -1,6 +1,6 @@
 {
  "answer-the-direct-question-before-details": {
-  "ignored": 2,
+  "ignored": 3,
   "liked": 0,
   "missed": 0,
   "right": 0,
@@ -21,7 +21,7 @@
  "design-for-no-tracking": {
   "ignored": 1,
   "liked": 0,
-  "missed": 1,
+  "missed": 2,
   "right": 0,
   "wrong": 0
  },
@@ -34,8 +34,9 @@
  },
  "give-context-when-asking-him": {
   "ignored": 2,
+  "liked": 0,
   "missed": 0,
-  "right": 0,
+  "right": 1,
   "wrong": 0
  },
  "mechanisms-in-hooks-not-claude-md": {

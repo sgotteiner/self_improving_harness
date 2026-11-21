@@ -110,13 +110,14 @@ def settle(tp, aw, out):
 def ask(tp, text, tag, reply=""):
     """brain.ask(text + the awaiting lessons + the proposal he was shown) -> (reply without VERDICT and PROPOSAL answers, tokens);
     the answers are acted on here. reply = the assistant's last reply: a proposal counts as shown only if it has its line. If
-    the call fails the blocks stay awaiting, a proposal waits for his next message, and the error goes on."""
+    the call fails the blocks stay awaiting, a proposal is dropped, and the error goes on."""
     import brain
     aw, pw = awaiting(tp), propread.waiting(tp, reply)
     try:
         out, tok = brain.ask(text + ask_text(aw) + propread.ask_text(pw), tag=tag)
     except Exception:
-        ctx.log("capverdict: model call failed, blocks stay awaiting")
+        ctx.log("capverdict: model call failed, blocks stay awaiting, proposals dropped")
+        propread.settle(pw, "")  # a proposal is never shown twice
         raise
     if aw:
         settle(tp, aw, out)
