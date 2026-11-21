@@ -16,6 +16,6 @@ pass_if:
   - the first sentence of the answer contains "yes" (or the plain direct answer), not "not exactly" or "technically"
   - the phrases "not exactly", "technically", "strictly speaking" do not appear before the answer to the effect
   - the answer says what happens to his money and when, and what he can do to stop it
-occurrences: 4
+occurrences: 6
 last_seen: 2026-11-20
 ---

@@ -1,36 +1,48 @@
 {
  "answer-the-direct-question-before-details": {
-  "ignored": 0,
+  "ignored": 1,
   "missed": 0,
   "right": 0,
   "wrong": 0
  },
  "answer-what-he-wants-to-know": {
-  "ignored": 0,
+  "ignored": 1,
   "missed": 1,
   "right": 0,
   "wrong": 0
  },
  "decide-trivial-choices-dont-ask": {
+  "ignored": 4,
+  "missed": 4,
+  "right": 1,
+  "wrong": 0
+ },
+ "design-for-no-tracking": {
   "ignored": 1,
-  "missed": 1,
+  "missed": 0,
+  "right": 0,
+  "wrong": 0
+ },
+ "fix-the-class-not-the-instance": {
+  "ignored": 1,
+  "missed": 0,
   "right": 0,
   "wrong": 0
  },
  "give-context-when-asking-him": {
-  "ignored": 1,
+  "ignored": 2,
   "missed": 0,
   "right": 0,
   "wrong": 0
  },
  "report-without-testing": {
-  "ignored": 0,
-  "missed": 0,
+  "ignored": 6,
+  "missed": 2,
   "right": 0,
   "wrong": 0
  },
  "scope-searches-by-known-context": {
-  "ignored": 0,
+  "ignored": 1,
   "missed": 1,
   "right": 0,
   "wrong": 0

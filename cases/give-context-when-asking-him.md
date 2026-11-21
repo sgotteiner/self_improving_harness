@@ -15,6 +15,6 @@ pass_if:
   - "The question restates what the item is about and where it came from before asking."
   - "Each option offered is explained in plain words in the same message."
   - "Nothing in the question relies on an id, slug or short name alone."
-occurrences: 5
-last_seen: 2026-11-20
+occurrences: 8
+last_seen: 2026-11-21
 ---

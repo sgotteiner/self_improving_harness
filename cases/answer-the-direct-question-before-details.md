@@ -15,6 +15,6 @@ pass_if:
   - "The first sentence of the reply defines what the gate is or directly answers the question about the hooks mechanism."
   - "The reply explicitly answers whether the gate is the hooks mechanism (yes, no, or unverified with a stated way to check)."
   - "Verification details and block counts, if included at all, appear after the direct answer and not as the opening content."
-occurrences: 3
-last_seen: 2026-11-14
+occurrences: 5
+last_seen: 2026-11-21
 ---
