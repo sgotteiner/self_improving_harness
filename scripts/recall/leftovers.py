@@ -18,6 +18,7 @@ VERIFIED = re.compile(r"(?<!not )verified|checked live", re.I)  # an SDD line 
 FINISHED = ("done", "closed")  # IDEAS statuses whose rows are not open items
 UNCHECKED = re.compile(r"^\s*- \[ \]\s*(.*)")
 NOTHING = "(nothing left open)"
+LATER = "\n## Later (not now)"  # the todo heading he set aside items under; they are not leftovers
 
 
 def _git(repo, *args):
@@ -44,10 +45,12 @@ def _cut(t):
 
 
 def todo_items(path):
+    """Unchecked items above the LATER heading; what he set aside for later is not a leftover."""
     try:
-        return [_cut(m.group(1)) for l in open(path, encoding="utf-8") if (m := UNCHECKED.match(l))]
+        lines = open(path, encoding="utf-8").read().split(LATER, 1)[0].splitlines()
     except OSError:
         return []
+    return [_cut(m.group(1)) for l in lines if (m := UNCHECKED.match(l))]
 
 
 def today_rows(path):
