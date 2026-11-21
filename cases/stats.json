@@ -1,13 +1,14 @@
 {
  "answer-the-direct-question-before-details": {
-  "ignored": 3,
+  "ignored": 4,
   "liked": 0,
   "missed": 0,
   "right": 0,
   "wrong": 0
  },
  "answer-what-he-wants-to-know": {
-  "ignored": 1,
+  "ignored": 2,
+  "liked": 0,
   "missed": 2,
   "right": 0,
   "wrong": 0
@@ -28,7 +29,7 @@
  "fix-the-class-not-the-instance": {
   "ignored": 0,
   "liked": 1,
-  "missed": 0,
+  "missed": 1,
   "right": 1,
   "wrong": 0
  },
