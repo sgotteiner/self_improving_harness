@@ -11,7 +11,7 @@ SLOT = "success-capture"
 FLAG = "PRAISE"
 ASK = (f"\n\nOn the flags line also add, when his message praises or says he liked something that the assistant, one of its agents, "
        f"a hook or a gate catch did in the recent turns (not only the previous one), exactly one line starting with {FLAG}: "
-       f"`{FLAG} | <one sentence naming what he liked>`. Otherwise add no such line.")
+       f"`{FLAG} | <score> | <one sentence naming what he liked>`, <score> = how sure you are that he praised the assistant, 1 to 5 (1 = a guess, 5 = certain). Otherwise add no such line.")
 LINE = flagline.regex(FLAG)
 
 

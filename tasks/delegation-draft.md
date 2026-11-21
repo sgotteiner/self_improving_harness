@@ -22,7 +22,7 @@ The last turns and the assistant's previous reply:
 
 The owner's new message: {prompt}
 
-What kind of message is it? Reply with exactly one word, and for CORRECTION add ` | ` and one sentence naming the assistant's mistake:
+What kind of message is it? Reply with exactly one word, and for CORRECTION add ` | <score> | ` and one sentence naming the assistant's mistake (<score> = how sure you are that his message corrects the assistant, 1 to 5: 1 = a guess, 5 = certain):
 QUESTION-YESNO: a new question from him that a yes or no answers.
 QUESTION-OPEN: a new bigger question (why, how, what is, he does not understand, he does not know).
 TASK: he asked the assistant to do or change something.
@@ -46,6 +46,7 @@ Instruction lines attached to the main session's context (the brain's word picks
 - FEEDBACK: He gave feedback on what the setup did (praise, or a verdict on a gate catch): record it now with the capture line attached to this message, say in one line what you saved and to which lesson, then continue the work you were on. Don't ask anything about it.
 - DONE: He says it's done: in this reply, propose the SDD edit — what changed, shown as the change to the doc. Only after his yes, the knowledge-manager writes it. For ideas, diary or flags: ask him only if something belongs there, with the exact line. After the knowledge-manager returns, check `git status` in the project's repo and in the Vault: commit what belongs to this feature and anything else that is good, one commit per feature; delete what is junk; ask him in one line only about a change you can't judge.
 - UNANSWERED: Your suggestion in the previous reply was not answered: it's a no. Don't repeat that suggestion and don't save it anywhere (his feedback in this message is still captured).
+- NO-LESSON: No relevant lesson found (closest: {lesson}, {score}/5): continue, and say in one line that no relevant lesson was found.
 - TESTS: Tests: a check that verifies what he asked for is part of the task: run it and report the result. Propose only a check beyond that (for what failed or may fail elsewhere), with the failure it prevents in one line; run that one only after his yes.
 
 ## Output step (gate.py, before the reply)

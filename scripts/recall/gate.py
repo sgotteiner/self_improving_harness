@@ -4,7 +4,7 @@ stop_hook_active (never blocks twice in a row). The delegation check (delegate.p
 import json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx, verdicts  # stdlib only; brain/capture/retrieve import numpy and fastembed, so they load inside main()
+import ctx, relevance, verdicts  # stdlib only; brain/capture/retrieve import numpy and fastembed, so they load inside main()
 
 
 def stop_limit():
@@ -38,16 +38,19 @@ def candidates(text, tools, exclude=()):
 
 def check_all(tp, text, tools):
     """Slot recall-all-lessons: one call with every lesson; [(id, why)] of each clearly broken one, or None."""
-    import alllessons as al, brain
+    import alllessons as al, brain, gatectx
     ls = al.lessons()
-    import gatectx
     msg, prev, kind = gatectx.around(tp)
     out, tok = brain.ask(al.GATE.format(lessons=al.block(ls), prev=prev, message=msg, kind=kind,
                                         tools="\n".join(tools) or "(none)", text=text), tag="gate-all")
-    found = al.named(out, ls, "VIOLATION")
-    for cid, why in found:
-        verdicts.log(tp, "lesson", "BLOCK", cid, ctx.hedged(why), tokens=tok)
-    if not found:
+    named, found = al.named(out, ls, "VIOLATION"), []
+    for cid, why in named:
+        score, why = relevance.split(why)  # a missing or malformed score is below the minimum: the reply goes out
+        sure = score is not None and score >= relevance.RELEVANCE_MIN
+        found += [(cid, why)] if sure else []
+        verdicts.log(tp, "lesson", "BLOCK" if sure else "OK", cid, ctx.hedged(why) if sure else False, tokens=tok, score=score,
+                     skip="" if sure else "relevance below the minimum")  # below it the lesson and its score stay in the log
+    if not named:
         verdicts.log(tp, "lesson", "OK", tokens=tok)
     try:  # after the verdict is logged; never changes it, never fails the gate
         import shadow

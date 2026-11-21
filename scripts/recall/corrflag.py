@@ -9,7 +9,7 @@ import flagline
 SLOT = "capture"
 FLAG = "CORRECTION"
 ASK = (f"\n\nWhatever kind you pick, when his message also says the assistant got something wrong or did not follow him, add "
-       f"exactly one more line `{FLAG} | <one sentence naming the assistant's mistake>` (not for the kind line itself when the kind is "
+       f"exactly one more line `{FLAG} | <score> | <one sentence naming the assistant's mistake>`, <score> = how sure you are, 1 to 5 (1 = a guess, 5 = certain) (not for the kind line itself when the kind is "
        f"{FLAG}). Otherwise add no such line.")
 LINE = flagline.regex(FLAG)
 

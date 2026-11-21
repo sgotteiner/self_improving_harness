@@ -38,6 +38,15 @@ def _near(why):
     return "\n".join(f"- {i}: {l[:110]}" for i, l in _closest(why, lessons()))
 
 
+def closest_id(why):
+    """The id of the lesson nearest to the detector's guess, or "none" (fails open)."""
+    try:
+        return _closest(why, lessons())[0][0]
+    except Exception as e:
+        ctx.log(f"capture: closest lesson not found: {e!r}")
+        return "none"
+
+
 def success_instruction(why, tp, prompt):
     """The line hook.py prints when the message step guessed he praised the previous turn (praise.py); marks it as owing a write."""
     capowed.owe(SUCCESS, tp, prompt)

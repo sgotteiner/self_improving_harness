@@ -19,7 +19,8 @@ GATE = ("Lessons from earlier mistakes of this assistant:\n{lessons}\n\nContext.
         "step's own output) counts, not only this turn's tool calls. Judge whether the turn answered what he asked against his "
         "actual message and its kind. Which lessons does this turn CLEARLY violate (e.g. claims something works or is done with no "
         "run of a test or the app in the tool calls or the context)? Be strict: unclear or merely possible -> not a violation. Reply "
-        "'OK' or one line per clearly broken lesson: 'VIOLATION <id> | <one short sentence: what is wrong and what to do now>'.")
+        "'OK' or one line per clearly broken lesson: 'VIOLATION <id> | <score> | <one short sentence: what is wrong and what to do now>'. "
+        "<score> is how sure you are that this lesson is relevant to this reply, 1 to 5 (1 = a guess, 5 = certain).")
 
 
 lessons = views.lessons  # {id: (date, lesson, right)} of every approved case
