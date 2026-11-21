@@ -95,7 +95,7 @@ def report(cwd, tp=""):
     """The leftover list for the project of `cwd` (and the session `tp`, for its running agents) as text; NOTHING when empty."""
     import projcheck
     proj = projcheck.project_dir(cwd or ctx.ROOT) or ctx.ROOT
-    docs = projcheck.documents(proj) or {}
+    docs = projcheck.documents(proj) or projcheck.documents(ctx.ROOT)  # a cwd with no project documents (the Vault, a scratch folder) falls back to the setup's, so its todo never drops out
     first = lambda n: (docs.get(n) or [""])[0]
     parts = {}
     try:

@@ -6,6 +6,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ctx
 
 NONE = "(not detected)"
+NOTIFIED = ("(none: this turn started from a background agent's completion notice, not from a message of his. The reply answers that "
+            "agent's result, so lessons about answering his question or what he wants to know do not apply; judge only the reply's own claims.)")
 
 
 def _file(tp):
@@ -29,10 +31,12 @@ def load_kind(tp, prompt):
 
 def around(tp):
     """(his latest message, the assistant's text before it, its detected kind); "(none)" for a part that is missing."""
-    es = ctx.entries(tp)
+    es = ctx.entries(tp, notices=True)  # the queued-command notices too, so a turn that began from one is seen
     hs = [i for i, e in enumerate(es) if ctx.human_text(e)]
     if not hs:
         return "(none)", "(none)", NONE
+    if any(ctx._notice(e) for e in es[hs[-1] + 1:]):
+        return NOTIFIED, "(none)", NONE
     msg = ctx.human_text(es[hs[-1]]).strip()
     lo = hs[-2] + 1 if len(hs) > 1 else 0
     prev = "\n".join(b["text"] for e in es[lo:hs[-1]] if e["type"] == "assistant" for b in ctx.blocks(e) if b.get("type") == "text")
