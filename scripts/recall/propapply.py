@@ -1,5 +1,5 @@
 """What a proposal does when he says yes (apply) or not (drop). Kinds and their data:
-  new-lesson        {slug, lesson, situation, did, disliked, his_words, source, sids?}  -> a lesson file via casesave.approve
+  new-lesson        {slug, lesson, situation, did, disliked, his_words, source, paid?, sids?}  -> a lesson file via casesave.approve
   edit              {lesson_id, text, sids?}                       -> the lesson's wording is replaced
   revert            {lesson_id, text, of, restore?, moved?}        -> the earlier wording; of a merge: `restore` = the archived lessons come back,
                                                                       `moved` = {sid: lesson id} their situations go back to
@@ -13,7 +13,7 @@ for cleanup.py's revert rule. Nothing is deleted: an archived lesson moves to ca
 import datetime, json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import capstats, clean, ctx, index, mdfile, pending, situations, views
+import capstats, clean, ctx, index, mdfile, pending, situations, tracechange, views
 
 KINDS = ("new-lesson", "edit", "merge", "retire-situation", "retire-lesson", "revert")
 ARCHIVE_DIR = "_archive"
@@ -102,10 +102,11 @@ def _new(d):
     path = os.path.join(casesave.PENDING, d["slug"] + ".md")
     os.makedirs(casesave.PENDING, exist_ok=True)
     mdfile.write_atomic(path, pending.case_text(d["slug"], d, d["his_words"], datetime.date.today()))
-    history.record(path, d["source"], d["his_words"], clean_text=json.dumps(
+    sid = history.record(path, d["source"], d["his_words"], clean_text=json.dumps(
         {"situation": d["situation"], "assistant_did": d["did"], "disliked": d["disliked"]}))
     if not casesave.approve(d["slug"], NEW_LEVEL):
         raise RuntimeError(f"approve of {d['slug']} failed")
+    d.get("paid") and tracechange.link_situations(d["paid"], [sid], d["source"], d["slug"])  # the proposal had no sid until now
 
 
 def _remember(d, cid):

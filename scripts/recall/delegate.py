@@ -8,7 +8,7 @@ tasks/delegation-draft.md (fenced blocks and bullet lists), so editing either ch
 into the code. Both steps return (result, tokens) and raise on failure; the callers (hook.py, gate.py) fail open."""
 import os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx, tracechange, turnfacts, verdicts
+import ctx, praise, tracechange, turnfacts, verdicts
 import delegvet
 from delegvet import keys as _keys, need as _need, veto
 
@@ -74,11 +74,15 @@ def input_step(prompt, transcript):
     recent = "\n".join(l[:600] for l in recent)  # his new message may already be in the transcript: left out
     prev = f"{recent}\n\nThe assistant's previous full reply:\n{reply[-4000:] or '(none)'}\nIts tool calls: {'; '.join(tools) or 'none'}"
     import capverdict  # the same call also judges gate blocks awaiting his verdict
-    out, tok, trace = tracechange.ask(capverdict.ask, transcript, _fill(_prompt("Input step"), prev=prev, prompt=prompt), prompt, "delegate-in", reply)
+    out, tok, trace = tracechange.ask(capverdict.ask, transcript, _fill(_prompt("Input step"), prev=prev, prompt=prompt) + praise.ask(), prompt, "delegate-in", reply)
+    out, liked = praise.take(out)  # slot success-capture: the same call also says whether he praised the previous turn
     m = re.match(r"\W*([A-Z]+(?:-[A-Z]+)?)", out.upper())
     kind = m.group(1) if m else ""
+    capturing = ctx.enabled("capture") and reply.strip()
+    import capwrite  # imported here, as in the correction branch below
+    praised = [capwrite.success_instruction(liked, transcript, prompt)] if liked and capturing else []  # kept for any kind
     if kind not in INPUT_KINDS:
-        return [], tok
+        return praised, tok
     try:  # for the gate's context; a write failure must not lose the instruction
         __import__("gatectx").save_kind(transcript, prompt, kind)
     except OSError as e:
@@ -87,10 +91,10 @@ def input_step(prompt, transcript):
     rest = out.upper().partition("|" if kind == "CORRECTION" else kind)[2]
     extra = [lines[f] for f in ("DONE", "UNANSWERED") if re.search(r"\b" + f + r"\b", rest)]  # done -> SDD edit; ignored -> a no
     extra += trace(kind, lines["DONE"] in extra)  # open / attach / close a feature trace
+    extra += praised
     if kind == "CORRECTION":
-        if not ctx.enabled("capture") or not reply.strip():
+        if not capturing:
             return extra, tok
-        import capwrite
         return [capwrite.instruction(out.partition("|")[2].strip() or "not specified", transcript, prompt)] + extra, tok
     return [lines[kind]] + ([lines["TESTS"]] if kind in ("TASK", "CONFIRMATION") else []) + extra, tok
 

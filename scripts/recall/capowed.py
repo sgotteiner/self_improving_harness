@@ -8,9 +8,13 @@ import ctx
 
 OWED = os.path.join(ctx.ROOT, "scripts", "recall", "results", "capture_owed.json")
 DAY = 86400
+OWN_MESSAGE = ("correction", "success")  # markers of one message of his: they block only the stop that answers it
 REASON = {"correction": "Capture: his message corrected you and the case was not written. Run `python -I scripts/recall/capture.py "
                         "write <json file>` now (situation, did, disliked, his_words, lesson + slug or lesson_id), or `capture.py "
                         "write --none \"<why it is not a mistake>\"` if the detector was wrong, then finish.",
+          "success": "Capture (success): his message may have praised you and nothing was written. Run `python -I scripts/recall/capture.py "
+                     "write <json file>` now (source \"success\", situation, did, liked, his_words, lesson + slug or lesson_id), or "
+                     "`capture.py write --none \"<why it is not praise>\" --success` if the detector was wrong, then finish.",
           "gate": "Capture: the output gate caught a known mistake earlier and no occurrence was recorded. Run `python -I "
                   "scripts/recall/capture.py write <json file>` with source \"gate\" and lesson_id, or `capture.py write --none \"<why the "
                   "block was a false alarm>\" --gate` if it was, then finish."}
@@ -97,13 +101,13 @@ def settle_rest():
 
 
 def settle(tp, active):
-    """Block reason (or None). A correction marker blocks only the stop of its own message; a gate marker the next stop of its
-    transcript. Once each; the stop that follows a block (active) never blocks."""
+    """Block reason (or None). A correction or success marker blocks only the stop of its own message, the correction first; a
+    gate marker the next stop of its transcript. Once each; the stop that follows a block (active) never blocks."""
     if active:
         return None
     es, cur = _load(), key(tp)
-    for e in es:
-        if e["tp"] != tp or e["paid"] or e["blocked"] or (e["kind"] == "correction" and e["key"] != cur):
+    for e in sorted(es, key=lambda e: e["kind"] != "correction"):  # stable: the rest keeps its order
+        if e["tp"] != tp or e["paid"] or e["blocked"] or (e["kind"] in OWN_MESSAGE and e["key"] != cur):
             continue
         e["blocked"] = True
         _save(es)

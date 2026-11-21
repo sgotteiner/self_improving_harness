@@ -80,6 +80,14 @@
     "enabled": true,
     "about": "on each gate call, after the real all-lessons check, the embedding path (retrieve.py, top-k, RELEVANCE_MIN, no model call) runs in shadow and one line goes to results/shadow_select.jsonl; `python -I scripts/recall/shadow.py report` compares it with what all-lessons named; never changes the verdict"
   },
+  "success-capture": {
+    "enabled": true,
+    "about": "the message step's one call (delegate.input_step) also says whether his message praises the assistant's previous turn (praise.py); if so the hook prints a Capture (success) line and the session writes a success lesson (capture.py write, source success) through the same path as a correction: privacy scan, history, patchfirst, a proposal that needs his yes. Off = no praise detection"
+  },
+  "trace-links": {
+    "enabled": true,
+    "about": "edges of the feature traces (tracing.py): a capture write adds the sid of the situation it stored to the session's latest open trace (on the correction event, or a `situation` event); the message step's TRACE NEW line may end with `| FROM <tid> [correction]` and the new trace then stores `from`; render shows `Started from tN` and the sids. Off = no edge is added or asked for; rows without the fields read as before. Runs only when the trace step does (slot delegation-hook)"
+  },
   "work-learning": {
     "enabled": true,
     "about": "a detached background review (workreview.py) of the work since the last review, at his done (the message step's DONE) and every 10 human turns; drafts at most one lesson (source work) through patchfirst, so it reaches him only as the proposal line"

@@ -4,8 +4,8 @@ opened it: only that session's open traces get a correction, a done or an event.
 import datetime, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ctx, tracing
-from tracing import NEW, NONE, NO_WHY, SEP, TITLE_MAX, WHY_MAX, add_event, change, flat, latest_open, mine, project, read, render
+import capowed, ctx, tracing
+from tracing import NEW, NONE, NO_WHY, SEP, SITUATION, TITLE_MAX, WHY_MAX, add_event, change, flat, latest_open, mine, project, read, render
 
 
 def ask(fn, tp, text, prompt, tag, reply):
@@ -31,11 +31,18 @@ def apply(tp, proj, tline, kind, prompt, done):
         word = head.strip().strip("`*<>.,")
         if word.upper() == NEW:
             title, _, why = rest.partition(SEP)
+            frm = ""
+            if ctx.enabled(tracing.LINK_SLOT):  # only a last part that is exactly a FROM leaves the why; a `|` in the why stays
+                head, sep, last = why.rpartition(SEP)
+                if sep and tracing.FROM_PART.fullmatch(last.strip(" `*.")):
+                    why, frm = head, last
             if not title.strip():
                 return []
             def make(rows):
+                src = tracing.origin(rows, tp, frm) if ctx.enabled(tracing.LINK_SLOT) else None  # before the new row: it is not its own origin
                 rows.append(dict(tid=f"t{len(rows) + 1}", project=proj, session=tp, title=flat(title, TITLE_MAX),
-                                 why=flat(why.strip(" `*") or NO_WHY, WHY_MAX), opened=str(datetime.date.today()), events=[], closed=None))
+                                 why=flat(why.strip(" `*") or NO_WHY, WHY_MAX), opened=str(datetime.date.today()), events=[], closed=None,
+                                 **({"from": src} if src else {})))
             change(proj, make)
             return []
         def attach(rows):
@@ -45,7 +52,9 @@ def apply(tp, proj, tline, kind, prompt, done):
                 r = latest_open(rows, tp) if kind == "CORRECTION" else op[0] if done and len(op) == 1 else None
             if not r:
                 return []
-            add_event(r, tp, "correction" if kind == "CORRECTION" else "done" if done else "message", prompt)
+            mark = kind == "CORRECTION" and ctx.enabled(tracing.LINK_SLOT)  # the key lets the write that pays this message find the event
+            add_event(r, tp, "correction" if kind == "CORRECTION" else "done" if done else "message", prompt,
+                      capowed.key(tp, prompt) if mark else "")
             if not done:
                 return []
             r["closed"] = str(datetime.date.today())
@@ -73,6 +82,33 @@ def add_events(tp, proj, evs):
         change(proj, put)
     except Exception as e:
         ctx.log(f"tracing: events failed: {e!r}")
+
+
+def link_situations(paid, sids, source, lesson_id):
+    """Add the sids of the situations a capture write just stored (`paid` = capowed.pay's marker, or a proposal's {tp, key}) to the
+    correction event of his message that owed the write, in whichever open trace of the session holds it; none -> a new `situation`
+    event on the latest open trace."""
+    try:
+        sids = [s for s in sids if s]
+        if not (sids and paid and ctx.enabled(tracing.LINK_SLOT)):
+            return
+        tp = paid["tp"]
+        proj = project(tp)
+        if not proj:
+            return
+        def put(rows):
+            ev = next((e for r in reversed(mine(rows, tp)) for e in r["events"]
+                       if source == "correction" and e["type"] == "correction" and paid.get("key") and e.get("k") == paid["key"]), None)
+            if not ev:
+                r = latest_open(rows, tp)
+                if not r:
+                    return
+                add_event(r, tp, SITUATION, f"{source}: {lesson_id or 'new lesson'}", f"{SITUATION}|{sids[0]}")
+                ev = r["events"][-1]
+            ev["sids"] = [*ev.get("sids", []), *sids]
+        change(proj, put)
+    except Exception as e:
+        ctx.log(f"tracing: situation link failed: {e!r}")
 
 
 def take_closed(tp):

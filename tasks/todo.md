@@ -18,6 +18,8 @@ Next things, in order. Done items get checked, not deleted.
 - [ ] Patch-before-create matches too loosely: a correction about unapproved tests was filed as a repeat of scope-searches-by-known-context (2026-11-21)
 - [ ] Merge check inconsistent: design-for-no-tracking + give-context-when-asking-him was proposed although the eval rejects that pair (2026-11-21)
 - [ ] Lessons v2 — read `python -I scripts/recall/shadow.py report` and the first proposals' verdicts after a week of use (2026-11-27)
+- [x] Success capture (praise → lesson, slot `success-capture`): done 2026-11-21. The reviewer's fixes were applied (liked text field, praise+correction markers, unknown kind, double privacy hit, nits); live check passed (PRAISE line returned, instruction printed, a success write accepted and matched by patch-before-create).
+- [ ] Trace links: at his first real approval of a new lesson, check that its situation's sid appears on the trace's correction event (traces/claude-config.jsonl). The full approval path was only checked with approve stubbed (2026-11-21).
 
 
 - [x] 2026-11-16 — Follow-up round for the hooks (from the reviewer, non-blocking): `flags.py` saves its state before the write (choices lost on a failed write) and has no cap on items per return or item length; `grounding.py` accepts filler spans ("it to work and that") — store the matched span or require content words; a project decision right after a setup edit can go to the setup diary, and the "Add it?" note doesn't name the target diary; gate `STOP_LIMIT` (180) duplicates `settings.json` with no check (done, tests in scripts/recall/tests; awaiting review)

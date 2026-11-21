@@ -48,14 +48,16 @@ def bump(path, date=None):
 def record(path, source, text, transcript="", clean_text=None):
     cid = os.path.basename(path)[:-3]
     occ = add(cid, source, text, transcript, clean_text=clean_text)
+    sid = None
     if clean_text:  # the session's own cleaned text goes into the store now; if that fails, sync adds the row by its id
         try:
             c = json.loads(clean_text)
-            situations.add(cid, source, c["situation"], c["assistant_did"], c["disliked"], occ=occ)
+            sid = situations.add(cid, source, c["situation"], c["assistant_did"], c["disliked"], occ=occ)
         except Exception as e:
             ctx.log(f"history: situation not stored now, sync will add it: {e!r}")
     bump(path)
     spawn_sync()
+    return sid  # None when the situation was not stored now
 
 
 def spawn_sync():

@@ -26,11 +26,13 @@ def compare(lesson, situation=""):
     return (cid, (m.group(2) or "").strip(" `") or lesson) if cid in ls else None
 
 
-def _edit(d, src, raw, c, cid, wording):
+def _edit(d, src, raw, c, cid, wording, sids=None):
     """Queue the reword of lesson cid with this situation attached (status proposed, active only on his yes). The session's own
-    words are recorded as for any repeat. A situation whose proposal was not queued is retired, never left proposed."""
+    words are recorded as for any repeat. A situation whose proposal was not queued is retired, never left proposed. `sids`: a list
+    the stored situation's sid is added to."""
     occ = history.add(cid, src, raw, clean_text=c)
     sid = situations.add(cid, src, d["situation"], d["did"], d["disliked"], occ=occ, status=situations.PROPOSED)
+    sids is None or sids.append(sid)
     try:
         pid = proposals.queue("edit", f"reword lesson {cid} to: {wording}", {"lesson_id": cid, "text": wording, "sids": [sid]})
     except BaseException:
@@ -42,8 +44,10 @@ def _edit(d, src, raw, c, cid, wording):
     return f"This repeats the lesson {cid}: queued as a proposal to reword it, with this situation attached. Nothing to ask him now."
 
 
-def propose(d, src, raw, c):
-    """Queue the proposal for a new lesson d (capwrite.write fields; c = its cleaned JSON); returns what to tell the session."""
+def propose(d, src, raw, c, sids=None, paid=None):
+    """Queue the proposal for a new lesson d (capwrite.write fields; c = its cleaned JSON); returns what to tell the session.
+    `sids`: a list that gets the sid of the situation stored now (a reword proposal stores one; a new-lesson proposal none yet).
+    `paid`: the marker of the write; a new-lesson proposal keeps its {tp, key} so his yes can link the situation it then creates."""
     try:
         same = compare(d["lesson"], d["situation"])
     except Exception as e:
@@ -54,10 +58,10 @@ def propose(d, src, raw, c):
         ctx.log(f"patchfirst: reworded lesson of {same[0]} failed the privacy scan, treated as new: {bad}")
         same = None
     if same:
-        return _edit(d, src, raw, c, *same)
+        return _edit(d, src, raw, c, *same, sids)
     slug = pending.slugify(d["slug"], pending.DEFAULT_SLUG)
     proposals.queue("new-lesson", f"add the lesson {slug}: {d['lesson']}", {
         "slug": slug, "lesson": d["lesson"], "situation": d["situation"], "did": d["did"], "disliked": d["disliked"],
-        "his_words": raw, "source": src})
+        "his_words": raw, "source": src, **({"paid": {k: paid[k] for k in ("tp", "key")}} if paid else {})})
     return (f"Queued as a proposal; only his yes adds it, he answers in one line (yes / ignore). Do not ask him now. "
             f"Lesson: {d['lesson']}")

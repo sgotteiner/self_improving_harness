@@ -2,7 +2,8 @@
 project, traces/<project>.jsonl (one line per trace {tid, project, title, why, opened, events, closed}), rewritten under the mdfile
 lock. The message step's one call adds the line `TRACE <tid>` | `TRACE NEW | <title> | <why>` | `TRACE NONE` (ASK); tracechange.py
 opens, attaches to and closes traces from it, and adds events found by code (traceevents.py). Event types: message, correction,
-agent, commit, done. Every function fails open: a trace never blocks a reply. Stdlib only (project detection loads diary lazily)."""
+agent, commit, done, situation (an event may carry `sids`: the situations a capture write stored; a row may carry `from` {tid[, type,
+event]}: the trace it started from; both only with the slot trace-links). Every function fails open: a trace never blocks a reply. Stdlib only (project detection loads diary lazily)."""
 import datetime, json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -26,6 +27,13 @@ ASK = ("\n\nOpen feature traces (a trace follows one feature from the problem th
        "where they exist; `(not stated)` if there is no such problem; otherwise `TRACE NONE`. A question or a correction of "
        "the assistant is not a new feature: a correction about an open trace's feature is `TRACE <tid>`.")
 LINE = re.compile(r"^\W*TRACE\s+(\S.*)$", re.M | re.I)
+LINK_SLOT = "trace-links"  # the edges: trace -> situations it produced (sids on events), trace -> trace (`from`); off = no edge is added or asked for
+FROM_CORRECTION, SITUATION = "correction", "situation"  # SITUATION: the event type that carries the sids of a write with no correction event
+FROM_ASK = (" When you answer `TRACE NEW` and the new feature came out of one of the open traces above (for example from a correction "
+            "the assistant got there, or a miss found while building it), add a last part: `TRACE NEW | <title> | <why> | FROM <tid>`, "
+            "or `| FROM <tid> correction` when it came out of a correction in that trace. Leave the part off when the new feature did "
+            "not come out of an open trace.")
+FROM_PART = re.compile(r"FROM\s+(t\d+)(?:\s+(" + FROM_CORRECTION + r"))?", re.I)
 
 
 def project(tp):
@@ -97,7 +105,7 @@ def ask_text(tp, proj, prompt=""):
         op = mine(read(proj), tp)[-OPEN_LIST_MAX:]
         said = [flat(t, HUMAN_CUT) for t in (ctx.human_text(e) for e in ctx.entries(tp)) if t and t.strip() != prompt.strip()]
         return ASK.format(open="\n".join(f"- {r['tid']}: {r['title']}" for r in op) or "(none)",
-                          said="\n".join(f"- {t}" for t in said[-HUMANS_SHOWN:]) or "(none)")
+                          said="\n".join(f"- {t}" for t in said[-HUMANS_SHOWN:]) or "(none)") + (FROM_ASK if op and ctx.enabled(LINK_SLOT) else "")
     except Exception as e:
         ctx.log(f"tracing: ask text failed: {e!r}")
         return ""
@@ -109,6 +117,22 @@ def take(out):
     return LINE.sub("", out), (found[-1].strip() if found else "")
 
 
+def origin(rows, tp, part):
+    """The `from` edge of a new trace from the TRACE NEW line's last part: {tid[, type, event]} when it is exactly `FROM <tid>
+    [correction]` and the tid is an open trace of this session, else None. `event` = index of that trace's latest correction."""
+    m = FROM_PART.fullmatch(part.strip(" `*."))
+    if not m:
+        return None
+    src = next((x for x in mine(rows, tp) if x["tid"].lower() == m.group(1).lower()), None)
+    if not src:
+        return None
+    i = next((i for i in reversed(range(len(src["events"]))) if src["events"][i]["type"] == FROM_CORRECTION), None) if m.group(2) else None
+    return {"tid": src["tid"], **({"type": FROM_CORRECTION, "event": i} if i is not None else {})}
+
+
 def render(r, cap=RECORD_MAX):
-    head = f"Feature trace {r['tid']}: {r['title']}\nWhy: {r['why']}\nOpened {r['opened']}" + (f", closed {r['closed']}" if r.get("closed") else "")
-    return (head + "".join(f"\n- {e['at'][:10]} {e['type']}: {e['text']}" for e in r["events"]))[:cap]
+    f = r.get("from")  # rows from before the edges have neither `from` nor event sids
+    head = (f"Feature trace {r['tid']}: {r['title']}\nWhy: {r['why']}\nOpened {r['opened']}" + (f", closed {r['closed']}" if r.get("closed") else "")
+            + (f"\nStarted from {f['tid']}" + (f" ({f['type']} event {f['event']})" if "event" in f else "") if f else ""))
+    return (head + "".join(f"\n- {e['at'][:10]} {e['type']}: {e['text']}" + (f" [{', '.join(e['sids'])}]" if e.get("sids") else "")
+                           for e in r["events"]))[:cap]

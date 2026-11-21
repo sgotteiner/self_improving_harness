@@ -8,7 +8,7 @@ DB = os.path.join(HERE, "cases.db")
 WEIGHTS = (2.0, 10.0, 3.0, 1.0, 1.0)
 NOT_LESSONS = ("README.md", "LESSONS.md")  # files of cases/ that are not lesson files (LESSONS.md is generated)
 STORE, ACTIVE = "situations.jsonl", "active"  # the situations store (situations.py) and the status of a live line
-PAGE_SOURCES = ("correction", "gate", "work")  # a seed line is a hand-written situation: no did / outcome, so no history block
+PAGE_SOURCES = ("correction", "gate", "work", "success")  # a seed line is a hand-written situation: no did / outcome, so no history block
 STOP = set("a an the to of in on at for and or but is are was be it its this that i me my we you do does did "
            "can could should would will just so as with from by if then than not no yes up out about into".split())
 
@@ -36,6 +36,15 @@ def unq(s):
 PARTS = ("situation", "assistant did", "he did not like", "lesson")  # the parts of one occurrence, in file order
 
 
+OUTCOME = PARTS[2]  # the one slot every source stores its outcome in; the key stays, only the words shown depend on the source
+OUTCOME_LABELS = {"success": "he liked", "work": "what came of it"}  # the other sources are complaints: PARTS' own label
+
+
+def label(part, source):
+    """The words shown for a part of an occurrence: the outcome reads as what he liked, or what came of it, by its source."""
+    return OUTCOME_LABELS.get(source, part) if part == OUTCOME else part
+
+
 def history_records(cid):
     """Cleaned occurrences of a lesson, read from the store (cases/situations.jsonl), active ones in store order:
     [{"date", "source", <PARTS>}]; the lesson part is the lesson's current text."""
@@ -50,7 +59,7 @@ def history_records(cid):
 
 def block(r):
     """The history-page block of one occurrence record (history_records' shape): the one place that format lives."""
-    return f"## {r['date']} | {r['source']}\n" + "".join(f"- {k}: {r[k]}\n" for k in PARTS)
+    return f"## {r['date']} | {r['source']}\n" + "".join(f"- {label(k, r['source'])}: {r[k]}\n" for k in PARTS)
 
 
 def occ_key(r):
@@ -60,7 +69,7 @@ def occ_key(r):
 
 def joined(r):
     """One recall document of an occurrence: its situation, what the assistant did, what he did not like."""
-    return " ".join(f"{k.capitalize()}: {r[k]}" for k in PARTS[:3] if r.get(k))
+    return " ".join(f"{label(k, r.get('source')).capitalize()}: {r[k]}" for k in PARTS[:3] if r.get(k))
 
 
 def history_texts(cid, skip=()):

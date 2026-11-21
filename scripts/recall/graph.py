@@ -42,7 +42,7 @@ def _load(pending=False):
                                    complaint=d.get("his_words"), date=d.get("date", ""))
         for r in [] if lid.startswith("_pending/") else index.history_records(lid):
             p = paths.setdefault(index.occ_key(r), dict(key=index.occ_key(r), lessons=[], sit=_list(r.get("situation")),
-                                                        did=r.get("assistant did"), complaint=r.get("he did not like"), date=r["date"]))
+                                                        did=r.get("assistant did"), complaint=r.get(index.OUTCOME), date=r["date"], source=r["source"]))
             p["lessons"].append(lid)
     nodes = [dict(kind="lesson", text=v["lesson"], lessons=[lid], path=None) for lid, v in lessons.items()]
     for p in paths.values():
@@ -50,7 +50,7 @@ def _load(pending=False):
                   for k, ts in (("situation", p["sit"]), ("action", _list(p["did"])), ("complaint", _list(p["complaint"]))) for t in ts]
     for p in paths.values():  # the whole disliked path as one text (the flat history document): a long turn matches it better than a part
         if p["key"][0] != "own":
-            nodes.append(dict(kind="path", text=index.joined({"situation": p["sit"][0], "assistant did": p["did"], "he did not like": p["complaint"]}), lessons=p["lessons"], path=p["key"]))
+            nodes.append(dict(kind="path", text=index.joined({"situation": p["sit"][0], "assistant did": p["did"], index.OUTCOME: p["complaint"], "source": p["source"]}), lessons=p["lessons"], path=p["key"]))
     nodes = [n for n in nodes if n["text"]]
     for n, v in zip(nodes, embed.encode([n["text"] for n in nodes])):
         n["vec"] = v
@@ -113,7 +113,7 @@ def trace(p):
     """The traced path as words for the brain and the injected line: past situation / what was done / what he did not like."""
     if not p:
         return ""
-    parts = (("situation", p["sit"][0] if p["sit"] else None), ("what was done", p["did"]), ("he did not like", p["complaint"]))
+    parts = (("situation", p["sit"][0] if p["sit"] else None), ("what was done", p["did"]), (index.label(index.OUTCOME, p.get("source")), p["complaint"]))
     return "Past: " + "; ".join(f"{k}: {v}" for k, v in parts if v) + "."
 
 
