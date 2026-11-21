@@ -86,6 +86,7 @@ def input_step(prompt, transcript):
         return [capwrite.instruction(why or "not specified", transcript, prompt)] if capturing else []
     corrected = kind == "CORRECTION" or bool(flagged)
     if kind not in INPUT_KINDS:
+        ctx.log(f"delegate: no known kind, reply was {out[:200]!r}")  # so a lost instruction line can be explained later
         return praised + (fixed(flagged) + trace(False, True) if flagged else []), tok  # the trace step still records the flag
     try:  # for the gate's context; a write failure must not lose the instruction
         __import__("gatectx").save_kind(transcript, prompt, kind)
