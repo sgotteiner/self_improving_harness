@@ -25,6 +25,7 @@
  },
  "fix-the-class-not-the-instance": {
   "ignored": 0,
+  "liked": 1,
   "missed": 0,
   "right": 1,
   "wrong": 0

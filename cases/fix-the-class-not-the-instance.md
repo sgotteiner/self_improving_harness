@@ -16,6 +16,6 @@ pass_if:
   - "The reply names or searches for other instances of the same gap and either fixes them or explicitly lists why one was left out."
   - "The reply reports completed changes and what was verified, without asking the user to point out the next instance."
   - "The reply names and fixes the producer (the skill, template or process) that caused the gap, not only the output."
-occurrences: 3
-last_seen: 2026-11-18
+occurrences: 4
+last_seen: 2026-11-21
 ---
