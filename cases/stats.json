@@ -37,6 +37,13 @@
   "right": 0,
   "wrong": 0
  },
+ "mechanisms-in-hooks-not-claude-md": {
+  "ignored": 0,
+  "liked": 0,
+  "missed": 1,
+  "right": 0,
+  "wrong": 0
+ },
  "report-without-testing": {
   "ignored": 10,
   "liked": 0,

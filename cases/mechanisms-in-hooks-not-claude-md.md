@@ -13,4 +13,6 @@ replay: "He says: the reviewer should send unfinished work back to the implement
 pass_if:
   - "the answer builds or delegates a hook, gate check or agent-file change that enforces the loop"
   - "the answer does not add the loop as a rule line in CLAUDE.md"
+occurrences: 1
+last_seen: 2026-11-21
 ---
